@@ -1,3 +1,9 @@
+# --------------------------------------------
+# Classeviva Client 
+# By James Capelli
+# Dependencies: python 3.8+, kivy, matplotlib
+# --------------------------------------------
+
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -873,4 +879,5 @@ class ClassevivaApp(App):
 
 
 if __name__ == '__main__':
+
     ClassevivaApp().run()
