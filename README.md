@@ -23,7 +23,7 @@ Un'applicazione desktop per visualizzare voti, medie e statistiche dal registro 
 
 ### 1. Clona il repository
 ```bash
-git clone https://github.com/[tuo-username]/classeviva-client.git
+git clone https://github.com/JamesC-07/Classeviva-Client.git
 cd classeviva-client
 ```
 
