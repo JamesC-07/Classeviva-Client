@@ -13,7 +13,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.tabbedpanel import TabbedPanel, TabbedPanelItem
 from kivy.clock import Clock
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, Line
 from kivy.uix.widget import Widget
@@ -25,55 +25,131 @@ import json
 import os
 
 
+class ResponsiveLayout:
+    """Classe helper per gestire dimensioni responsive"""
+    
+    @staticmethod
+    def is_tablet():
+        """Determina se il dispositivo è un tablet (larghezza > 600dp)"""
+        return Window.width > dp(600)
+    
+    @staticmethod
+    def get_font_size(base_size):
+        """Calcola dimensione font responsive"""
+        if ResponsiveLayout.is_tablet():
+            return sp(base_size * 1.3)
+        return sp(base_size)
+    
+    @staticmethod
+    def get_spacing():
+        """Ritorna spacing appropriato"""
+        return dp(15) if ResponsiveLayout.is_tablet() else dp(10)
+    
+    @staticmethod
+    def get_padding():
+        """Ritorna padding appropriato"""
+        return dp(20) if ResponsiveLayout.is_tablet() else dp(15)
+    
+    @staticmethod
+    def get_height(base_height):
+        """Calcola altezza responsive"""
+        if ResponsiveLayout.is_tablet():
+            return dp(base_height * 1.2)
+        return dp(base_height)
+
+
 class LoginScreen(BoxLayout):
     def __init__(self, app_instance, **kwargs):
         super().__init__(**kwargs)
         self.app = app_instance
         self.orientation = 'vertical'
-        self.padding = dp(20)
-        self.spacing = dp(10)
+        self.padding = ResponsiveLayout.get_padding()
+        self.spacing = ResponsiveLayout.get_spacing()
+        
+        Window.bind(on_resize=self.on_window_resize)
+        
+        # Spacer top
+        self.add_widget(Widget(size_hint=(1, 0.1)))
         
         # Titolo
         title = Label(
             text='Classeviva Client',
-            size_hint=(1, 0.2),
-            font_size='24sp',
+            size_hint=(1, None),
+            height=ResponsiveLayout.get_height(60),
+            font_size=ResponsiveLayout.get_font_size(24),
             bold=True
         )
         self.add_widget(title)
+        
+        # Container centrale con larghezza massima per tablet
+        container = BoxLayout(
+            orientation='vertical',
+            spacing=ResponsiveLayout.get_spacing(),
+            size_hint_x=None,
+            width=min(Window.width - dp(40), dp(500)) if ResponsiveLayout.is_tablet() else Window.width - dp(40)
+        )
+        container.pos_hint = {'center_x': 0.5}
         
         # Campo username
         self.username_input = TextInput(
             hint_text='Username (es. S1234567C)',
             multiline=False,
-            size_hint=(1, 0.1)
+            size_hint=(1, None),
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(16),
+            padding=[dp(15), dp(15)]
         )
-        self.add_widget(self.username_input)
+        container.add_widget(self.username_input)
         
         # Campo password
         self.password_input = TextInput(
             hint_text='Password',
             multiline=False,
             password=True,
-            size_hint=(1, 0.1)
+            size_hint=(1, None),
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(16),
+            padding=[dp(15), dp(15)]
         )
-        self.add_widget(self.password_input)
+        container.add_widget(self.password_input)
         
         # Pulsante login
         login_btn = Button(
             text='Accedi',
-            size_hint=(1, 0.15),
+            size_hint=(1, None),
+            height=ResponsiveLayout.get_height(55),
+            font_size=ResponsiveLayout.get_font_size(18),
+            bold=True,
             on_press=self.do_login
         )
-        self.add_widget(login_btn)
+        container.add_widget(login_btn)
         
         # Label per messaggi di errore
         self.error_label = Label(
             text='',
-            size_hint=(1, 0.2),
+            size_hint=(1, None),
+            height=ResponsiveLayout.get_height(60),
+            font_size=ResponsiveLayout.get_font_size(14),
             color=(1, 0, 0, 1)
         )
-        self.add_widget(self.error_label)
+        container.add_widget(self.error_label)
+        
+        # Wrapper per centrare il container
+        wrapper = BoxLayout(orientation='horizontal')
+        wrapper.add_widget(Widget())
+        wrapper.add_widget(container)
+        wrapper.add_widget(Widget())
+        
+        self.add_widget(wrapper)
+        self.add_widget(Widget(size_hint=(1, 0.2)))
+    
+    def on_window_resize(self, instance, width, height):
+        """Aggiorna layout quando la finestra viene ridimensionata"""
+        Clock.schedule_once(lambda dt: self.update_layout(), 0.1)
+    
+    def update_layout(self):
+        """Ricostruisce il layout con nuove dimensioni"""
+        pass
     
     def do_login(self, instance):
         username = self.username_input.text
@@ -86,7 +162,6 @@ class LoginScreen(BoxLayout):
         self.error_label.text = 'Accesso in corso...'
         self.error_label.color = (0, 1, 0, 1)
         
-        # Login in thread separato
         thread = threading.Thread(
             target=self.app.login,
             args=(username, password)
@@ -100,29 +175,51 @@ class MainScreen(BoxLayout):
         self.app = app_instance
         self.orientation = 'vertical'
         
+        Window.bind(on_resize=self.on_window_resize)
+        
         # Header con nome utente e logout
-        header = BoxLayout(size_hint=(1, 0.08), padding=dp(10))
-        self.user_label = Label(text='', size_hint=(0.7, 1))
+        header_height = ResponsiveLayout.get_height(60)
+        header = BoxLayout(
+            size_hint=(1, None),
+            height=header_height,
+            padding=ResponsiveLayout.get_padding()
+        )
+        self.user_label = Label(
+            text='',
+            size_hint=(0.7, 1),
+            font_size=ResponsiveLayout.get_font_size(16),
+            halign='left',
+            valign='middle'
+        )
+        self.user_label.bind(size=self.user_label.setter('text_size'))
+        
         logout_btn = Button(
             text='Logout',
             size_hint=(0.3, 1),
+            font_size=ResponsiveLayout.get_font_size(14),
             on_press=self.logout
         )
         header.add_widget(self.user_label)
         header.add_widget(logout_btn)
         self.add_widget(header)
         
-        # Tab panel
-        self.tabs = TabbedPanel(do_default_tab=False)
+        # Tab panel con altezza tab responsiva
+        self.tabs = TabbedPanel(
+            do_default_tab=False,
+            tab_height=ResponsiveLayout.get_height(50)
+        )
+        
+        # Imposta dimensione font per i tab
+        tab_font_size = ResponsiveLayout.get_font_size(14)
         
         # Tab Voti
         self.voti_tab = TabbedPanelItem(text='Voti')
         self.voti_content = ScrollView()
         self.voti_layout = GridLayout(
             cols=1,
-            spacing=dp(5),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            padding=dp(10)
+            padding=ResponsiveLayout.get_padding()
         )
         self.voti_layout.bind(minimum_height=self.voti_layout.setter('height'))
         self.voti_content.add_widget(self.voti_layout)
@@ -134,9 +231,9 @@ class MainScreen(BoxLayout):
         self.media_content = ScrollView()
         self.media_layout = GridLayout(
             cols=1,
-            spacing=dp(5),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            padding=dp(10)
+            padding=ResponsiveLayout.get_padding()
         )
         self.media_layout.bind(minimum_height=self.media_layout.setter('height'))
         self.media_content.add_widget(self.media_layout)
@@ -148,9 +245,9 @@ class MainScreen(BoxLayout):
         self.stats_content = ScrollView()
         self.stats_layout = BoxLayout(
             orientation='vertical',
-            spacing=dp(10),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            padding=dp(10)
+            padding=ResponsiveLayout.get_padding()
         )
         self.stats_layout.bind(minimum_height=self.stats_layout.setter('height'))
         self.stats_content.add_widget(self.stats_layout)
@@ -162,9 +259,9 @@ class MainScreen(BoxLayout):
         self.assenze_content = ScrollView()
         self.assenze_layout = BoxLayout(
             orientation='vertical',
-            spacing=dp(10),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            padding=dp(10)
+            padding=ResponsiveLayout.get_padding()
         )
         self.assenze_layout.bind(minimum_height=self.assenze_layout.setter('height'))
         self.assenze_content.add_widget(self.assenze_layout)
@@ -177,6 +274,20 @@ class MainScreen(BoxLayout):
         self.voti_data = []
         self.assenze_data = []
     
+    def on_window_resize(self, instance, width, height):
+        """Aggiorna layout quando cambia orientamento"""
+        if self.data_loaded:
+            Clock.schedule_once(lambda dt: self.refresh_all_data(), 0.1)
+    
+    def refresh_all_data(self):
+        """Ricarica tutti i dati con nuove dimensioni"""
+        if self.voti_data:
+            self.display_voti(self.voti_data)
+            self.display_media(self.voti_data)
+            self.display_statistics(self.voti_data)
+        if self.assenze_data:
+            self.display_assenze(self.assenze_data)
+    
     def logout(self, instance):
         self.app.do_logout()
     
@@ -187,44 +298,27 @@ class MainScreen(BoxLayout):
         """Calcola i giorni di scuola dell'anno scolastico"""
         oggi = datetime.now()
         
-        # Determina inizio e fine anno scolastico
         if oggi.month >= 9:
-            # Siamo nel primo periodo (settembre-dicembre)
             inizio_anno = datetime(oggi.year, 9, 1)
             fine_anno = datetime(oggi.year + 1, 6, 30)
         else:
-            # Siamo nel secondo periodo (gennaio-giugno)
             inizio_anno = datetime(oggi.year - 1, 9, 1)
             fine_anno = datetime(oggi.year, 6, 30)
         
-        # Calcola giorni totali escludendo weekend e festività principali
         giorni_totali = 0
         giorni_trascorsi = 0
         
-        # Festività principali (approssimative)
         festivita = [
-            (11, 1),  # Tutti i Santi
-            (12, 8),  # Immacolata
-            (12, 25), (12, 26),  # Natale
-            (1, 1), (1, 6),  # Capodanno ed Epifania
-            (4, 25),  # Liberazione
-            (5, 1),  # Festa del Lavoro
-            (6, 2),   # Festa della Repubblica
+            (11, 1), (12, 8), (12, 25), (12, 26),
+            (1, 1), (1, 6), (4, 25), (5, 1), (6, 2),
         ]
-        
-        # Vacanze di Natale (approssimative: 23 dic - 6 gen)
-        # Vacanze di Pasqua (approssimative: variabili, stimiamo 1 settimana ad aprile)
         
         data_corrente = inizio_anno
         while data_corrente <= fine_anno:
-            # Salta weekend
-            if data_corrente.weekday() < 5:  # 0-4 = lun-ven
-                # Salta festività
+            if data_corrente.weekday() < 5:
                 if (data_corrente.month, data_corrente.day) not in festivita:
-                    # Salta vacanze di Natale
                     if not (data_corrente.month == 12 and data_corrente.day >= 23) and \
                        not (data_corrente.month == 1 and data_corrente.day <= 6):
-                        # Salta vacanze pasquali (approssimazione)
                         if not (data_corrente.month == 4 and 10 <= data_corrente.day <= 17):
                             giorni_totali += 1
                             if data_corrente <= oggi:
@@ -233,14 +327,7 @@ class MainScreen(BoxLayout):
             data_corrente += timedelta(days=1)
         
         giorni_rimanenti = giorni_totali - giorni_trascorsi
-        
         return giorni_totali, giorni_trascorsi, giorni_rimanenti
-    
-    def logout(self, instance):
-        self.app.do_logout()
-    
-    def update_user_info(self, name):
-        self.user_label.text = f'Benvenuto, {name}'
     
     def _determina_quadrimestre(self, data_str):
         """Determina il quadrimestre basandosi sulla data del voto"""
@@ -250,20 +337,228 @@ class MainScreen(BoxLayout):
             else:
                 data = data_str
             
-            anno = data.year
             mese = data.month
             
-            # Primo quadrimestre: settembre-gennaio
-            # Secondo quadrimestre: febbraio-giugno
             if mese >= 9 or mese == 1:
                 return 1
             elif mese >= 2 and mese <= 6:
                 return 2
             else:
-                # Luglio-agosto considerati periodo estivo (ignora)
                 return None
         except:
             return None
+    
+    def _create_expandable_voto_card(self, voto):
+        """Crea una card voto espandibile"""
+        materia = voto.get('subjectDesc', voto.get('materia', 'N/A'))
+        valore_str = voto.get('displayValue', voto.get('decimalValue', voto.get('voto', 'N/A')))
+        data = voto.get('evtDate', voto.get('data', 'N/A'))
+        tipo = voto.get('componentDesc', voto.get('tipo', 'N/A'))
+        nota = voto.get('notesForFamily', voto.get('nota', ''))
+        
+        colore_codice = voto.get('color', '')
+        voto_non_conta = (colore_codice == 'blue')
+        
+        quadrimestre = self._determina_quadrimestre(data)
+        quadrimestre_str = f' [Q{quadrimestre}]' if quadrimestre else ''
+        
+        if voto_non_conta:
+            colore = (0.3, 0.5, 1, 1)
+        else:
+            try:
+                valore_num = float(str(valore_str).replace(',', '.').replace('+', '').replace('-', '').replace('½', '.5'))
+                colore = (0, 0.8, 0, 1) if valore_num >= 6 else (1, 0, 0, 1)
+            except (ValueError, TypeError):
+                colore = (0.5, 0.5, 0.5, 1)
+        
+        # Determina se il testo è lungo
+        testo_lungo = len(tipo) > 30 or (nota and len(nota) > 50)
+        
+        # Container principale
+        card_container = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=ResponsiveLayout.get_height(110)
+        )
+        
+        # Box principale con voto e info
+        voto_box = BoxLayout(
+            orientation='horizontal',
+            size_hint_y=None,
+            height=ResponsiveLayout.get_height(110),
+            padding=ResponsiveLayout.get_padding(),
+            spacing=ResponsiveLayout.get_spacing()
+        )
+        
+        # Box voto (sinistra)
+        voto_left = BoxLayout(
+            orientation='vertical',
+            size_hint_x=0.25,
+            padding=dp(5)
+        )
+        voto_left.add_widget(Label(
+            text=f'[b]{valore_str}[/b]',
+            markup=True,
+            font_size=ResponsiveLayout.get_font_size(28),
+            color=colore,
+            size_hint_y=0.6
+        ))
+        voto_left.add_widget(Label(
+            text=data + quadrimestre_str,
+            font_size=ResponsiveLayout.get_font_size(10),
+            size_hint_y=0.4
+        ))
+        
+        # Box dettagli (destra)
+        voto_right = BoxLayout(
+            orientation='vertical',
+            size_hint_x=0.75,
+            padding=dp(5),
+            spacing=dp(2)
+        )
+        
+        # Label materia
+        materia_label = Label(
+            text=f'[b]{materia}[/b]',
+            markup=True,
+            font_size=ResponsiveLayout.get_font_size(14),
+            size_hint_y=None,
+            height=ResponsiveLayout.get_height(25),
+            halign='left',
+            valign='middle',
+            text_size=(None, None)
+        )
+        materia_label.bind(
+            size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
+        )
+        voto_right.add_widget(materia_label)
+        
+        # Label tipo (troncato se lungo)
+        tipo_display = tipo if len(tipo) <= 50 else tipo[:47] + '...'
+        tipo_label = Label(
+            text=tipo_display,
+            font_size=ResponsiveLayout.get_font_size(12),
+            size_hint_y=None,
+            height=ResponsiveLayout.get_height(20),
+            halign='left',
+            valign='middle',
+            text_size=(None, None)
+        )
+        tipo_label.bind(
+            size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
+        )
+        voto_right.add_widget(tipo_label)
+        
+        # Note (troncate se lunghe)
+        if nota:
+            nota_display = nota if len(nota) <= 80 else nota[:77] + '...'
+            nota_label = Label(
+                text=nota_display,
+                font_size=ResponsiveLayout.get_font_size(10),
+                size_hint_y=None,
+                height=ResponsiveLayout.get_height(30),
+                color=(0.7, 0.7, 0.7, 1),
+                halign='left',
+                valign='top',
+                text_size=(None, None)
+            )
+            nota_label.bind(
+                size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
+            )
+            voto_right.add_widget(nota_label)
+        
+        voto_box.add_widget(voto_left)
+        voto_box.add_widget(voto_right)
+        card_container.add_widget(voto_box)
+        
+        # Box espandibile (inizialmente nascosto)
+        expanded_box = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=0,
+            padding=[ResponsiveLayout.get_padding(), 0, ResponsiveLayout.get_padding(), ResponsiveLayout.get_padding()],
+            spacing=dp(5),
+            opacity=0
+        )
+        
+        if testo_lungo:
+            # Tipo completo
+            if len(tipo) > 50:
+                tipo_full = Label(
+                    text=f'[b]Tipo:[/b] {tipo}',
+                    markup=True,
+                    font_size=ResponsiveLayout.get_font_size(12),
+                    size_hint_y=None,
+                    halign='left',
+                    valign='top',
+                    text_size=(None, None)
+                )
+                tipo_full.bind(
+                    size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
+                )
+                tipo_full.bind(
+                    texture_size=lambda instance, value: setattr(instance, 'height', value[1])
+                )
+                expanded_box.add_widget(tipo_full)
+            
+            # Note complete
+            if nota and len(nota) > 80:
+                nota_full = Label(
+                    text=f'[b]Note:[/b] {nota}',
+                    markup=True,
+                    font_size=ResponsiveLayout.get_font_size(11),
+                    size_hint_y=None,
+                    color=(0.7, 0.7, 0.7, 1),
+                    halign='left',
+                    valign='top',
+                    text_size=(None, None)
+                )
+                nota_full.bind(
+                    size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
+                )
+                nota_full.bind(
+                    texture_size=lambda instance, value: setattr(instance, 'height', value[1])
+                )
+                expanded_box.add_widget(nota_full)
+        
+        card_container.add_widget(expanded_box)
+        
+        # Pulsante espandi/comprimi (solo se necessario)
+        if testo_lungo:
+            expand_btn = Button(
+                text='Mostra tutto',
+                size_hint_y=None,
+                height=ResponsiveLayout.get_height(35),
+                font_size=ResponsiveLayout.get_font_size(11),
+                background_color=(0.2, 0.2, 0.2, 1)
+            )
+            
+            # Stato espansione
+            expand_btn.is_expanded = False
+            
+            def toggle_expand(instance):
+                if instance.is_expanded:
+                    # Comprimi
+                    instance.is_expanded = False
+                    instance.text = 'Mostra tutto'
+                    expanded_box.height = 0
+                    expanded_box.opacity = 0
+                    card_container.height = ResponsiveLayout.get_height(110 + 35)
+                else:
+                    # Espandi
+                    instance.is_expanded = True
+                    instance.text = 'Nascondi'
+                    # Calcola altezza necessaria
+                    total_height = sum(child.height for child in expanded_box.children) + dp(10)
+                    expanded_box.height = total_height
+                    expanded_box.opacity = 1
+                    card_container.height = ResponsiveLayout.get_height(110 + 35) + total_height
+            
+            expand_btn.bind(on_press=toggle_expand)
+            card_container.add_widget(expand_btn)
+            card_container.height = ResponsiveLayout.get_height(110 + 35)
+        
+        return card_container
     
     def display_voti(self, voti_data):
         self.voti_layout.clear_widgets()
@@ -273,38 +568,69 @@ class MainScreen(BoxLayout):
             self.voti_layout.add_widget(Label(
                 text='Nessun voto disponibile',
                 size_hint_y=None,
-                height=dp(40)
+                height=ResponsiveLayout.get_height(40),
+                font_size=ResponsiveLayout.get_font_size(14)
             ))
             self.data_loaded = True
             return
         
         for voto in voti_data:
+            # Crea card espandibile
+            card = self._create_expandable_voto_card(voto)
+            self.voti_layout.add_widget(card)
+            self.voti_layout.add_widget(card)
+            
+            # Separatore
+            separator = Widget(size_hint_y=None, height=dp(1))
+            with separator.canvas:
+                Color(0.3, 0.3, 0.3, 0.5)
+                separator.rect = Rectangle(pos=separator.pos, size=separator.size)
+            separator.bind(pos=lambda instance, value: setattr(instance.rect, 'pos', instance.pos))
+            separator.bind(size=lambda instance, value: setattr(instance.rect, 'size', instance.size))
+            self.voti_layout.add_widget(separator)
+        
+        self.data_loaded = True
+
+    def display_voti(self, voti_data):
+        self.voti_layout.clear_widgets()
+        self.voti_data = voti_data
+        
+        if not voti_data:
+            self.voti_layout.add_widget(Label(
+                text='Nessun voto disponibile',
+                size_hint_y=None,
+                height=ResponsiveLayout.get_height(40),
+                font_size=ResponsiveLayout.get_font_size(14)
+            ))
+            self.data_loaded = True
+            return
+        
+        for voto in voti_data:
+            # Calcola altezza dinamica in base alla presenza di note
+            nota = voto.get('notesForFamily', voto.get('nota', ''))
+            card_height = ResponsiveLayout.get_height(140) if nota else ResponsiveLayout.get_height(110)
+            
             voto_box = BoxLayout(
                 orientation='horizontal',
                 size_hint_y=None,
-                height=dp(100),
-                padding=dp(15),
-                spacing=dp(10)
+                height=card_height,
+                padding=ResponsiveLayout.get_padding(),
+                spacing=ResponsiveLayout.get_spacing()
             )
             
-            # Estrai dati voto
             materia = voto.get('subjectDesc', voto.get('materia', 'N/A'))
             valore_str = voto.get('displayValue', voto.get('decimalValue', voto.get('voto', 'N/A')))
             data = voto.get('evtDate', voto.get('data', 'N/A'))
             tipo = voto.get('componentDesc', voto.get('tipo', 'N/A'))
-            nota = voto.get('notesForFamily', voto.get('nota', ''))
             
-            # Controlla se è un voto blu (non conta per la media)
             colore_codice = voto.get('color', '')
             voto_non_conta = (colore_codice == 'blue')
             
-            # Determina quadrimestre
             quadrimestre = self._determina_quadrimestre(data)
             quadrimestre_str = f' [Q{quadrimestre}]' if quadrimestre else ''
             
-            # Determina colore in base al voto
             if voto_non_conta:
-                colore = (0.3, 0.5, 1, 1)  # Blu per voti che non contano
+                colore = (0.3, 0.5, 1, 1)
             else:
                 try:
                     valore_num = float(str(valore_str).replace(',', '.').replace('+', '').replace('-', '').replace('½', '.5'))
@@ -315,63 +641,76 @@ class MainScreen(BoxLayout):
             # Box voto (sinistra)
             voto_left = BoxLayout(
                 orientation='vertical',
-                size_hint_x=0.3,
+                size_hint_x=0.25,
                 padding=dp(5)
             )
             voto_left.add_widget(Label(
                 text=f'[b]{valore_str}[/b]',
                 markup=True,
-                font_size='32sp',
+                font_size=ResponsiveLayout.get_font_size(28),
                 color=colore,
                 size_hint_y=0.6
             ))
             voto_left.add_widget(Label(
                 text=data + quadrimestre_str,
-                font_size='12sp',
+                font_size=ResponsiveLayout.get_font_size(10),
                 size_hint_y=0.4
             ))
             
             # Box dettagli (destra)
             voto_right = BoxLayout(
                 orientation='vertical',
-                size_hint_x=0.7,
+                size_hint_x=0.75,
                 padding=dp(5),
                 spacing=dp(2)
             )
             
+            # Label materia con text wrapping
             materia_label = Label(
                 text=f'[b]{materia}[/b]',
                 markup=True,
-                font_size='16sp',
+                font_size=ResponsiveLayout.get_font_size(14),
                 size_hint_y=None,
-                height=dp(25),
+                height=ResponsiveLayout.get_height(25),
                 halign='left',
                 valign='middle',
-                text_size=(Window.width * 0.6, None)
+                text_size=(None, None)  # Inizialmente None
+            )
+            # Bind per impostare text_size alla larghezza effettiva del widget
+            materia_label.bind(
+                size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
             )
             voto_right.add_widget(materia_label)
             
+            # Label tipo con text wrapping
             tipo_label = Label(
                 text=tipo,
-                font_size='14sp',
+                font_size=ResponsiveLayout.get_font_size(12),
                 size_hint_y=None,
-                height=dp(20),
+                height=ResponsiveLayout.get_height(20),
                 halign='left',
                 valign='middle',
-                text_size=(Window.width * 0.6, None)
+                text_size=(None, None)
+            )
+            tipo_label.bind(
+                size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
             )
             voto_right.add_widget(tipo_label)
             
+            # Note (se presenti)
             if nota:
                 nota_label = Label(
                     text=nota,
-                    font_size='11sp',
+                    font_size=ResponsiveLayout.get_font_size(10),
                     size_hint_y=None,
-                    height=dp(25),
+                    height=ResponsiveLayout.get_height(40),
                     color=(0.7, 0.7, 0.7, 1),
                     halign='left',
                     valign='top',
-                    text_size=(Window.width * 0.6, None)
+                    text_size=(None, None)
+                )
+                nota_label.bind(
+                    size=lambda instance, value: setattr(instance, 'text_size', (instance.width, None))
                 )
                 voto_right.add_widget(nota_label)
             
@@ -379,12 +718,14 @@ class MainScreen(BoxLayout):
             voto_box.add_widget(voto_right)
             
             self.voti_layout.add_widget(voto_box)
+            
+            # Separatore
             separator = Widget(size_hint_y=None, height=dp(1))
             with separator.canvas:
                 Color(0.3, 0.3, 0.3, 0.5)
                 separator.rect = Rectangle(pos=separator.pos, size=separator.size)
-            separator.bind(pos=lambda *args: setattr(separator.rect, 'pos', separator.pos))
-            separator.bind(size=lambda *args: setattr(separator.rect, 'size', separator.size))
+            separator.bind(pos=lambda instance, value: setattr(instance.rect, 'pos', instance.pos))
+            separator.bind(size=lambda instance, value: setattr(instance.rect, 'size', instance.size))
             self.voti_layout.add_widget(separator)
         
         self.data_loaded = True
@@ -396,17 +737,16 @@ class MainScreen(BoxLayout):
             self.media_layout.add_widget(Label(
                 text='Nessun dato disponibile',
                 size_hint_y=None,
-                height=dp(40)
+                height=ResponsiveLayout.get_height(40),
+                font_size=ResponsiveLayout.get_font_size(14)
             ))
             return
         
-        # Calcola medie per materia divise per quadrimestre
         materie_q1 = {}
         materie_q2 = {}
         materie_totale = {}
         
         for voto in voti_data:
-            # Salta i voti blu
             colore_codice = voto.get('color', '')
             if colore_codice == 'blue':
                 continue
@@ -418,12 +758,10 @@ class MainScreen(BoxLayout):
             try:
                 valore = float(voto.get('decimalValue', voto.get('voto', 0)))
                 if valore > 0:
-                    # Aggiungi al totale
                     if materia not in materie_totale:
                         materie_totale[materia] = []
                     materie_totale[materia].append(valore)
                     
-                    # Aggiungi al quadrimestre specifico
                     if quadrimestre == 1:
                         if materia not in materie_q1:
                             materie_q1[materia] = []
@@ -440,109 +778,114 @@ class MainScreen(BoxLayout):
             text='[b]MEDIE PER MATERIA[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(40),
-            font_size='18sp'
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(18)
         ))
         
-        # Tabella header
-        header_box = BoxLayout(
-            orientation='horizontal',
-            size_hint_y=None,
-            height=dp(40),
-            padding=dp(5)
-        )
-        header_box.add_widget(Label(
-            text='[b]Materia[/b]',
-            markup=True,
-            size_hint_x=0.4,
-            font_size='14sp'
-        ))
-        header_box.add_widget(Label(
-            text='[b]Q1[/b]',
-            markup=True,
-            size_hint_x=0.2,
-            font_size='14sp'
-        ))
-        header_box.add_widget(Label(
-            text='[b]Q2[/b]',
-            markup=True,
-            size_hint_x=0.2,
-            font_size='14sp'
-        ))
-        header_box.add_widget(Label(
-            text='[b]Totale[/b]',
-            markup=True,
-            size_hint_x=0.2,
-            font_size='14sp'
-        ))
-        self.media_layout.add_widget(header_box)
+        # Determina se usare 4 colonne (tablet) o layout compatto (phone)
+        use_compact = not ResponsiveLayout.is_tablet()
         
-        # Medie per materia
+        if not use_compact:
+            # Layout tablet - tabella completa
+            header_box = BoxLayout(
+                orientation='horizontal',
+                size_hint_y=None,
+                height=ResponsiveLayout.get_height(40),
+                padding=dp(5)
+            )
+            header_box.add_widget(Label(text='[b]Materia[/b]', markup=True, size_hint_x=0.4, font_size=ResponsiveLayout.get_font_size(14)))
+            header_box.add_widget(Label(text='[b]Q1[/b]', markup=True, size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14)))
+            header_box.add_widget(Label(text='[b]Q2[/b]', markup=True, size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14)))
+            header_box.add_widget(Label(text='[b]Totale[/b]', markup=True, size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14)))
+            self.media_layout.add_widget(header_box)
+        
         tutte_medie_q1 = []
         tutte_medie_q2 = []
         tutte_medie_totale = []
         
         for materia in sorted(materie_totale.keys()):
-            media_box = BoxLayout(
-                orientation='horizontal',
-                size_hint_y=None,
-                height=dp(50),
-                padding=dp(5)
-            )
-            
-            # Nome materia
-            media_box.add_widget(Label(
-                text=materia,
-                size_hint_x=0.4,
-                halign='left',
-                valign='middle',
-                text_size=(Window.width * 0.35, None),
-                font_size='13sp'
-            ))
-            
-            # Media Q1
-            if materia in materie_q1:
-                media_q1 = sum(materie_q1[materia]) / len(materie_q1[materia])
-                tutte_medie_q1.append(media_q1)
+            if use_compact:
+                # Layout compatto per smartphone
+                media_box = BoxLayout(
+                    orientation='vertical',
+                    size_hint_y=None,
+                    height=ResponsiveLayout.get_height(80),
+                    padding=dp(10),
+                    spacing=dp(5)
+                )
+                
                 media_box.add_widget(Label(
-                    text=f'{media_q1:.2f}',
-                    size_hint_x=0.2,
-                    font_size='14sp'
+                    text=f'[b]{materia}[/b]',
+                    markup=True,
+                    size_hint_y=None,
+                    height=dp(25),
+                    font_size=ResponsiveLayout.get_font_size(13),
+                    halign='left',
+                    valign='middle'
                 ))
+                
+                values_box = BoxLayout(orientation='horizontal', spacing=dp(10))
+                
+                if materia in materie_q1:
+                    media_q1 = sum(materie_q1[materia]) / len(materie_q1[materia])
+                    tutte_medie_q1.append(media_q1)
+                    values_box.add_widget(Label(text=f'Q1: {media_q1:.2f}', font_size=ResponsiveLayout.get_font_size(12)))
+                
+                if materia in materie_q2:
+                    media_q2 = sum(materie_q2[materia]) / len(materie_q2[materia])
+                    tutte_medie_q2.append(media_q2)
+                    values_box.add_widget(Label(text=f'Q2: {media_q2:.2f}', font_size=ResponsiveLayout.get_font_size(12)))
+                
+                media_totale = sum(materie_totale[materia]) / len(materie_totale[materia])
+                tutte_medie_totale.append(media_totale)
+                values_box.add_widget(Label(
+                    text=f'[b]Tot: {media_totale:.2f}[/b]',
+                    markup=True,
+                    font_size=ResponsiveLayout.get_font_size(13)
+                ))
+                
+                media_box.add_widget(values_box)
             else:
+                # Layout tabella per tablet
+                media_box = BoxLayout(
+                    orientation='horizontal',
+                    size_hint_y=None,
+                    height=ResponsiveLayout.get_height(50),
+                    padding=dp(5)
+                )
+                
+                materia_label = Label(
+                    text=materia,
+                    size_hint_x=0.4,
+                    halign='left',
+                    valign='middle',
+                    font_size=ResponsiveLayout.get_font_size(13)
+                )
+                materia_label.bind(width=lambda *x: materia_label.setter('text_size')(materia_label, (materia_label.width, None)))
+                media_box.add_widget(materia_label)
+                
+                if materia in materie_q1:
+                    media_q1 = sum(materie_q1[materia]) / len(materie_q1[materia])
+                    tutte_medie_q1.append(media_q1)
+                    media_box.add_widget(Label(text=f'{media_q1:.2f}', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14)))
+                else:
+                    media_box.add_widget(Label(text='-', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14), color=(0.5, 0.5, 0.5, 1)))
+                
+                if materia in materie_q2:
+                    media_q2 = sum(materie_q2[materia]) / len(materie_q2[materia])
+                    tutte_medie_q2.append(media_q2)
+                    media_box.add_widget(Label(text=f'{media_q2:.2f}', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14)))
+                else:
+                    media_box.add_widget(Label(text='-', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(14), color=(0.5, 0.5, 0.5, 1)))
+                
+                media_totale = sum(materie_totale[materia]) / len(materie_totale[materia])
+                tutte_medie_totale.append(media_totale)
                 media_box.add_widget(Label(
-                    text='-',
+                    text=f'[b]{media_totale:.2f}[/b]',
+                    markup=True,
                     size_hint_x=0.2,
-                    font_size='14sp',
-                    color=(0.5, 0.5, 0.5, 1)
+                    font_size=ResponsiveLayout.get_font_size(14)
                 ))
-            
-            # Media Q2
-            if materia in materie_q2:
-                media_q2 = sum(materie_q2[materia]) / len(materie_q2[materia])
-                tutte_medie_q2.append(media_q2)
-                media_box.add_widget(Label(
-                    text=f'{media_q2:.2f}',
-                    size_hint_x=0.2,
-                    font_size='14sp'
-                ))
-            else:
-                media_box.add_widget(Label(
-                    text='-',
-                    size_hint_x=0.2,
-                    font_size='14sp',
-                    color=(0.5, 0.5, 0.5, 1)
-                ))
-            
-            # Media totale
-            media_totale = sum(materie_totale[materia]) / len(materie_totale[materia])
-            tutte_medie_totale.append(media_totale)
-            media_box.add_widget(Label(
-                text=f'[b]{media_totale:.2f}[/b]',
-                markup=True,
-                size_hint_x=0.2,
-                font_size='14sp'
-            ))
             
             self.media_layout.add_widget(media_box)
         
@@ -554,50 +897,87 @@ class MainScreen(BoxLayout):
                 height=dp(20)
             ))
             
-            generale_box = BoxLayout(
-                orientation='horizontal',
-                size_hint_y=None,
-                height=dp(60),
-                padding=dp(5)
-            )
-            
-            generale_box.add_widget(Label(
-                text='[b]MEDIA GENERALE[/b]',
-                markup=True,
-                size_hint_x=0.4,
-                font_size='16sp'
-            ))
-            
-            if tutte_medie_q1:
-                media_gen_q1 = sum(tutte_medie_q1) / len(tutte_medie_q1)
+            if use_compact:
+                # Layout compatto
+                generale_box = BoxLayout(
+                    orientation='vertical',
+                    size_hint_y=None,
+                    height=ResponsiveLayout.get_height(100),
+                    padding=dp(10),
+                    spacing=dp(5)
+                )
+                
                 generale_box.add_widget(Label(
-                    text=f'[b]{media_gen_q1:.2f}[/b]',
+                    text='[b]MEDIA GENERALE[/b]',
+                    markup=True,
+                    font_size=ResponsiveLayout.get_font_size(16)
+                ))
+                
+                values_box = BoxLayout(orientation='horizontal', spacing=dp(10))
+                
+                if tutte_medie_q1:
+                    media_gen_q1 = sum(tutte_medie_q1) / len(tutte_medie_q1)
+                    values_box.add_widget(Label(text=f'Q1: [b]{media_gen_q1:.2f}[/b]', markup=True, font_size=ResponsiveLayout.get_font_size(15)))
+                
+                if tutte_medie_q2:
+                    media_gen_q2 = sum(tutte_medie_q2) / len(tutte_medie_q2)
+                    values_box.add_widget(Label(text=f'Q2: [b]{media_gen_q2:.2f}[/b]', markup=True, font_size=ResponsiveLayout.get_font_size(15)))
+                
+                media_gen_totale = sum(tutte_medie_totale) / len(tutte_medie_totale)
+                values_box.add_widget(Label(
+                    text=f'Tot: [b]{media_gen_totale:.2f}[/b]',
+                    markup=True,
+                    font_size=ResponsiveLayout.get_font_size(16),
+                    color=(0, 0.7, 1, 1)
+                ))
+                
+                generale_box.add_widget(values_box)
+            else:
+                # Layout tabella
+                generale_box = BoxLayout(
+                    orientation='horizontal',
+                    size_hint_y=None,
+                    height=ResponsiveLayout.get_height(60),
+                    padding=dp(5)
+                )
+                
+                generale_box.add_widget(Label(
+                    text='[b]MEDIA GENERALE[/b]',
+                    markup=True,
+                    size_hint_x=0.4,
+                    font_size=ResponsiveLayout.get_font_size(16)
+                ))
+                
+                if tutte_medie_q1:
+                    media_gen_q1 = sum(tutte_medie_q1) / len(tutte_medie_q1)
+                    generale_box.add_widget(Label(
+                        text=f'[b]{media_gen_q1:.2f}[/b]',
+                        markup=True,
+                        size_hint_x=0.2,
+                        font_size=ResponsiveLayout.get_font_size(18)
+                    ))
+                else:
+                    generale_box.add_widget(Label(text='-', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(18)))
+                
+                if tutte_medie_q2:
+                    media_gen_q2 = sum(tutte_medie_q2) / len(tutte_medie_q2)
+                    generale_box.add_widget(Label(
+                        text=f'[b]{media_gen_q2:.2f}[/b]',
+                        markup=True,
+                        size_hint_x=0.2,
+                        font_size=ResponsiveLayout.get_font_size(18)
+                    ))
+                else:
+                    generale_box.add_widget(Label(text='-', size_hint_x=0.2, font_size=ResponsiveLayout.get_font_size(18)))
+                
+                media_gen_totale = sum(tutte_medie_totale) / len(tutte_medie_totale)
+                generale_box.add_widget(Label(
+                    text=f'[b]{media_gen_totale:.2f}[/b]',
                     markup=True,
                     size_hint_x=0.2,
-                    font_size='18sp'
+                    font_size=ResponsiveLayout.get_font_size(18),
+                    color=(0, 0.7, 1, 1)
                 ))
-            else:
-                generale_box.add_widget(Label(text='-', size_hint_x=0.2))
-            
-            if tutte_medie_q2:
-                media_gen_q2 = sum(tutte_medie_q2) / len(tutte_medie_q2)
-                generale_box.add_widget(Label(
-                    text=f'[b]{media_gen_q2:.2f}[/b]',
-                    markup=True,
-                    size_hint_x=0.2,
-                    font_size='18sp'
-                ))
-            else:
-                generale_box.add_widget(Label(text='-', size_hint_x=0.2))
-            
-            media_gen_totale = sum(tutte_medie_totale) / len(tutte_medie_totale)
-            generale_box.add_widget(Label(
-                text=f'[b]{media_gen_totale:.2f}[/b]',
-                markup=True,
-                size_hint_x=0.2,
-                font_size='18sp',
-                color=(0, 0.7, 1, 1)
-            ))
             
             self.media_layout.add_widget(generale_box)
     
@@ -608,7 +988,8 @@ class MainScreen(BoxLayout):
             self.stats_layout.add_widget(Label(
                 text='Nessun dato disponibile per le statistiche',
                 size_hint_y=None,
-                height=dp(40)
+                height=ResponsiveLayout.get_height(40),
+                font_size=ResponsiveLayout.get_font_size(14)
             ))
             return
         
@@ -630,16 +1011,13 @@ class MainScreen(BoxLayout):
             try:
                 valore = float(voto.get('decimalValue', 0))
                 if valore > 0:
-                    # Dati per materia
                     if materia not in materie_data:
                         materie_data[materia] = []
                     materie_data[materia].append(valore)
                     
-                    # Distribuzione voti
                     voto_arrotondato = round(valore)
                     distribuzione_voti[voto_arrotondato] = distribuzione_voti.get(voto_arrotondato, 0) + 1
                     
-                    # Voti per quadrimestre
                     if quadrimestre == 1:
                         voti_q1.append(valore)
                     elif quadrimestre == 2:
@@ -652,24 +1030,24 @@ class MainScreen(BoxLayout):
             text='[b]STATISTICHE[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(50),
-            font_size='20sp'
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(20)
         ))
         
         # Card: Statistiche generali
         stats_card = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(200),
+            height=ResponsiveLayout.get_height(200),
             padding=dp(10),
             spacing=dp(10)
         )
         
         stats_grid = GridLayout(
             cols=2,
-            spacing=dp(10),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            height=dp(180)
+            height=ResponsiveLayout.get_height(180)
         )
         
         # Totale voti
@@ -703,12 +1081,13 @@ class MainScreen(BoxLayout):
             text='[b]Media per Materia[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(40),
-            font_size='16sp'
+            height=ResponsiveLayout.get_height(40),
+            font_size=ResponsiveLayout.get_font_size(16)
         ))
+
         
         materie_ordinate = sorted(materie_data.items(), key=lambda x: sum(x[1])/len(x[1]), reverse=True)
-        for materia, voti in materie_ordinate:  # Mostra TUTTE le materie
+        for materia, voti in materie_ordinate:
             if len(voti) > 0:
                 media = sum(voti) / len(voti)
                 self.stats_layout.add_widget(self._create_bar_chart(materia, media, len(voti)))
@@ -719,8 +1098,8 @@ class MainScreen(BoxLayout):
                 text='[b]Distribuzione Voti[/b]',
                 markup=True,
                 size_hint_y=None,
-                height=dp(50),
-                font_size='16sp'
+                height=ResponsiveLayout.get_height(50),
+                font_size=ResponsiveLayout.get_font_size(16)
             ))
             
             max_count = max(distribuzione_voti.values())
@@ -735,10 +1114,9 @@ class MainScreen(BoxLayout):
         """Crea un box per una statistica"""
         box = BoxLayout(
             orientation='vertical',
-            padding=dp(10)
+            padding=ResponsiveLayout.get_padding()
         )
         
-        # Sfondo colorato
         with box.canvas.before:
             Color(*color, 0.3)
             box.rect = Rectangle(pos=box.pos, size=box.size)
@@ -748,14 +1126,14 @@ class MainScreen(BoxLayout):
         
         box.add_widget(Label(
             text=label,
-            font_size='12sp',
+            font_size=ResponsiveLayout.get_font_size(12),
             size_hint_y=0.4,
             color=(0.7, 0.7, 0.7, 1)
         ))
         box.add_widget(Label(
             text=f'[b]{value}[/b]',
             markup=True,
-            font_size='24sp',
+            font_size=ResponsiveLayout.get_font_size(24),
             size_hint_y=0.6,
             color=color
         ))
@@ -767,20 +1145,21 @@ class MainScreen(BoxLayout):
         box = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
-            height=dp(50),
+            height=ResponsiveLayout.get_height(50),
             padding=dp(5),
-            spacing=dp(10)
+            spacing=ResponsiveLayout.get_spacing()
         )
         
         # Nome materia
-        box.add_widget(Label(
+        materia_label = Label(
             text=materia[:25],
             size_hint_x=0.4,
             halign='left',
             valign='middle',
-            text_size=(Window.width * 0.35, None),
-            font_size='12sp'
-        ))
+            font_size=ResponsiveLayout.get_font_size(12)
+        )
+        materia_label.bind(width=lambda *x: materia_label.setter('text_size')(materia_label, (materia_label.width, None)))
+        box.add_widget(materia_label)
         
         # Barra grafico
         bar_container = BoxLayout(size_hint_x=0.4)
@@ -789,11 +1168,9 @@ class MainScreen(BoxLayout):
         def draw_bar(*args):
             bar_widget.canvas.clear()
             with bar_widget.canvas:
-                # Sfondo grigio chiaro
                 Color(0.9, 0.9, 0.9, 1)
                 Rectangle(pos=bar_widget.pos, size=bar_widget.size)
                 
-                # Barra colorata
                 if media >= 6:
                     Color(0, 0.8, 0, 1)
                 else:
@@ -802,7 +1179,6 @@ class MainScreen(BoxLayout):
                 bar_width = (media / 10.0) * bar_widget.width
                 Rectangle(pos=bar_widget.pos, size=(bar_width, bar_widget.height))
                 
-                # Linea del 6
                 Color(1, 0.6, 0, 0.5)
                 line_x = bar_widget.x + (6.0 / 10.0) * bar_widget.width
                 Line(points=[line_x, bar_widget.y, line_x, bar_widget.y + bar_widget.height], width=1.5)
@@ -816,7 +1192,7 @@ class MainScreen(BoxLayout):
             text=f'[b]{media:.2f}[/b]\n({count})',
             markup=True,
             size_hint_x=0.2,
-            font_size='13sp'
+            font_size=ResponsiveLayout.get_font_size(13)
         ))
         
         return box
@@ -826,16 +1202,16 @@ class MainScreen(BoxLayout):
         box = BoxLayout(
             orientation='horizontal',
             size_hint_y=None,
-            height=dp(40),
+            height=ResponsiveLayout.get_height(40),
             padding=dp(5),
-            spacing=dp(10)
+            spacing=ResponsiveLayout.get_spacing()
         )
         
         # Voto
         box.add_widget(Label(
             text=str(voto),
             size_hint_x=0.1,
-            font_size='16sp',
+            font_size=ResponsiveLayout.get_font_size(16),
             bold=True
         ))
         
@@ -846,11 +1222,9 @@ class MainScreen(BoxLayout):
         def draw_hist_bar(*args):
             bar_widget.canvas.clear()
             with bar_widget.canvas:
-                # Sfondo
                 Color(0.9, 0.9, 0.9, 1)
                 Rectangle(pos=bar_widget.pos, size=bar_widget.size)
                 
-                # Barra colorata
                 if voto >= 6:
                     Color(0, 0.8, 0, 0.8)
                 else:
@@ -867,7 +1241,7 @@ class MainScreen(BoxLayout):
         box.add_widget(Label(
             text=str(count),
             size_hint_x=0.2,
-            font_size='14sp'
+            font_size=ResponsiveLayout.get_font_size(14)
         ))
         
         return box
@@ -880,7 +1254,8 @@ class MainScreen(BoxLayout):
             self.assenze_layout.add_widget(Label(
                 text='Nessun dato sulle assenze disponibile',
                 size_hint_y=None,
-                height=dp(40)
+                height=ResponsiveLayout.get_height(40),
+                font_size=ResponsiveLayout.get_font_size(14)
             ))
             return
         
@@ -891,11 +1266,11 @@ class MainScreen(BoxLayout):
         
         for assenza in assenze_data:
             evento_codice = assenza.get('evtCode', '')
-            if evento_codice == 'ABA0':  # Assenza
+            if evento_codice == 'ABA0':
                 assenze_totali += 1
-            elif evento_codice == 'ABR0':  # Ritardo
+            elif evento_codice == 'ABR0':
                 ritardi += 1
-            elif evento_codice == 'ABU0':  # Uscita anticipata
+            elif evento_codice == 'ABU0':
                 uscite_anticipate += 1
         
         # Calcola giorni scuola
@@ -912,24 +1287,24 @@ class MainScreen(BoxLayout):
             text='[b]REPORT ASSENZE (APPROSSIMATO!)[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(50),
-            font_size='20sp'
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(20)
         ))
         
         # Card: Statistiche assenze
         stats_card = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(280),
+            height=ResponsiveLayout.get_height(280),
             padding=dp(10),
             spacing=dp(10)
         )
         
         stats_grid = GridLayout(
             cols=2,
-            spacing=dp(10),
+            spacing=ResponsiveLayout.get_spacing(),
             size_hint_y=None,
-            height=dp(260)
+            height=ResponsiveLayout.get_height(260)
         )
         
         # Assenze totali
@@ -942,10 +1317,10 @@ class MainScreen(BoxLayout):
         # Uscite anticipate
         stats_grid.add_widget(self._create_stat_box('Uscite Antic.', str(uscite_anticipate), (0.9, 0.5, 0.2, 1)))
         
-        # Percentuale assenze rispetto ai giorni trascorsi
+        # Percentuale assenze
         stats_grid.add_widget(self._create_stat_box('% Assenze', f'{percentuale_assenze:.1f}%', color_assenze))
         
-        # Percentuale giorni trascorsi
+        # Percentuale anno trascorso
         percentuale_anno = (giorni_trascorsi / giorni_totali * 100) if giorni_totali > 0 else 0
         stats_grid.add_widget(self._create_stat_box('% Anno Trascorso', f'{percentuale_anno:.1f}%', (0.5, 0.7, 0.9, 1)))
         
@@ -960,58 +1335,35 @@ class MainScreen(BoxLayout):
             text='[b]Anno Scolastico[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(40),
-            font_size='16sp'
+            height=ResponsiveLayout.get_height(40),
+            font_size=ResponsiveLayout.get_font_size(16)
         ))
         
         giorni_box = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(150),
+            height=ResponsiveLayout.get_height(150),
             padding=dp(10),
             spacing=dp(5)
         )
         
-        giorni_box.add_widget(Label(
-            text=f'Giorni scolastici totali: [b]{giorni_totali}[/b]',
-            markup=True,
-            size_hint_y=None,
-            height=dp(35),
-            font_size='14sp',
-            halign='left',
-            text_size=(Window.width - dp(40), None)
-        ))
-        
-        giorni_box.add_widget(Label(
-            text=f'Giorni trascorsi: [b]{giorni_trascorsi}[/b]',
-            markup=True,
-            size_hint_y=None,
-            height=dp(35),
-            font_size='14sp',
-            halign='left',
-            text_size=(Window.width - dp(40), None)
-        ))
-        
-        giorni_box.add_widget(Label(
-            text=f'Giorni rimanenti: [b]{giorni_rimanenti}[/b]',
-            markup=True,
-            size_hint_y=None,
-            height=dp(35),
-            font_size='14sp',
-            halign='left',
-            text_size=(Window.width - dp(40), None)
-        ))
-        
-        giorni_box.add_widget(Label(
-            text=f'Limite assenze (25%): [b]{limite_assenze}[/b]',
-            markup=True,
-            size_hint_y=None,
-            height=dp(35),
-            font_size='14sp',
-            halign='left',
-            text_size=(Window.width - dp(40), None),
-            color=(1, 0.6, 0, 1)
-        ))
+        for text, color in [
+            (f'Giorni scolastici totali: [b]{giorni_totali}[/b]', (1, 1, 1, 1)),
+            (f'Giorni trascorsi: [b]{giorni_trascorsi}[/b]', (1, 1, 1, 1)),
+            (f'Giorni rimanenti: [b]{giorni_rimanenti}[/b]', (1, 1, 1, 1)),
+            (f'Limite assenze (25%): [b]{limite_assenze}[/b]', (1, 0.6, 0, 1))
+        ]:
+            label = Label(
+                text=text,
+                markup=True,
+                size_hint_y=None,
+                height=ResponsiveLayout.get_height(35),
+                font_size=ResponsiveLayout.get_font_size(14),
+                halign='left',
+                color=color
+            )
+            label.bind(width=lambda *x: label.setter('text_size')(label, (label.width, None)))
+            giorni_box.add_widget(label)
         
         self.assenze_layout.add_widget(giorni_box)
         
@@ -1020,8 +1372,8 @@ class MainScreen(BoxLayout):
             text='[b]Limite Annuale Assenze[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(40),
-            font_size='16sp'
+            height=ResponsiveLayout.get_height(40),
+            font_size=ResponsiveLayout.get_font_size(16)
         ))
         
         # Messaggio stato
@@ -1036,8 +1388,8 @@ class MainScreen(BoxLayout):
             text=stato_text,
             markup=True,
             size_hint_y=None,
-            height=dp(40),
-            font_size='15sp',
+            height=ResponsiveLayout.get_height(40),
+            font_size=ResponsiveLayout.get_font_size(15),
             color=stato_color
         ))
         
@@ -1045,22 +1397,20 @@ class MainScreen(BoxLayout):
         progress_box = BoxLayout(
             orientation='vertical',
             size_hint_y=None,
-            height=dp(100),
+            height=ResponsiveLayout.get_height(100),
             padding=dp(10),
             spacing=dp(5)
         )
         
-        bar_container = BoxLayout(size_hint_y=None, height=dp(50))
+        bar_container = BoxLayout(size_hint_y=None, height=ResponsiveLayout.get_height(50))
         bar_widget = Widget()
         
         def draw_progress_bar(*args):
             bar_widget.canvas.clear()
             with bar_widget.canvas:
-                # Sfondo
                 Color(0.9, 0.9, 0.9, 1)
                 Rectangle(pos=bar_widget.pos, size=bar_widget.size)
                 
-                # Barra progresso
                 if percentuale_limite <= 70:
                     Color(0, 0.8, 0, 0.8)
                 elif percentuale_limite <= 90:
@@ -1071,12 +1421,10 @@ class MainScreen(BoxLayout):
                 bar_width = min(percentuale_limite / 100.0, 1.0) * bar_widget.width
                 Rectangle(pos=bar_widget.pos, size=(bar_width, bar_widget.height))
                 
-                # Linea al 70% (soglia di attenzione)
                 Color(1, 0.7, 0, 0.5)
                 line_x = bar_widget.x + 0.7 * bar_widget.width
                 Line(points=[line_x, bar_widget.y, line_x, bar_widget.y + bar_widget.height], width=2)
                 
-                # Linea al 100% (limite)
                 Color(1, 0, 0, 0.7)
                 line_x = bar_widget.x + bar_widget.width
                 Line(points=[line_x, bar_widget.y, line_x, bar_widget.y + bar_widget.height], width=2)
@@ -1088,8 +1436,8 @@ class MainScreen(BoxLayout):
         progress_box.add_widget(Label(
             text=f'{assenze_totali} / {limite_assenze} assenze ({percentuale_limite:.1f}%)',
             size_hint_y=None,
-            height=dp(30),
-            font_size='14sp'
+            height=ResponsiveLayout.get_height(30),
+            font_size=ResponsiveLayout.get_font_size(14)
         ))
         
         self.assenze_layout.add_widget(progress_box)
@@ -1099,19 +1447,18 @@ class MainScreen(BoxLayout):
             text='[b]Dettaglio Assenze[/b]',
             markup=True,
             size_hint_y=None,
-            height=dp(50),
-            font_size='16sp'
+            height=ResponsiveLayout.get_height(50),
+            font_size=ResponsiveLayout.get_font_size(16)
         ))
         
         # Ordina per data
         assenze_ordinate = sorted(assenze_data, key=lambda x: x.get('evtDate', ''), reverse=True)
         
-        for assenza in assenze_ordinate[:20]:  # Mostra ultime 20
+        for assenza in assenze_ordinate[:20]:
             evento_codice = assenza.get('evtCode', '')
             data = assenza.get('evtDate', 'N/A')
             giustificata = assenza.get('isJustified', False)
             
-            # Determina tipo e colore
             if evento_codice == 'ABA0':
                 tipo = 'Assenza'
                 colore = (1, 0.3, 0.3, 1)
@@ -1131,37 +1478,38 @@ class MainScreen(BoxLayout):
             assenza_box = BoxLayout(
                 orientation='horizontal',
                 size_hint_y=None,
-                height=dp(60),
-                padding=dp(10),
-                spacing=dp(10)
+                height=ResponsiveLayout.get_height(60),
+                padding=ResponsiveLayout.get_padding(),
+                spacing=ResponsiveLayout.get_spacing()
             )
             
             # Data e tipo
             left_box = BoxLayout(orientation='vertical', size_hint_x=0.4)
             left_box.add_widget(Label(
                 text=data,
-                font_size='12sp',
+                font_size=ResponsiveLayout.get_font_size(12),
                 size_hint_y=0.4,
                 color=(0.6, 0.6, 0.6, 1)
             ))
             left_box.add_widget(Label(
                 text=tipo,
-                font_size='14sp',
+                font_size=ResponsiveLayout.get_font_size(14),
                 size_hint_y=0.6,
                 color=colore
             ))
             assenza_box.add_widget(left_box)
             
             # Stato giustificazione
-            assenza_box.add_widget(Label(
+            stato_label = Label(
                 text=stato,
                 size_hint_x=0.6,
-                font_size='13sp',
+                font_size=ResponsiveLayout.get_font_size(13),
                 color=stato_colore,
                 halign='right',
-                valign='middle',
-                text_size=(Window.width * 0.5, None)
-            ))
+                valign='middle'
+            )
+            stato_label.bind(width=lambda *x: stato_label.setter('text_size')(stato_label, (stato_label.width, None)))
+            assenza_box.add_widget(stato_label)
             
             self.assenze_layout.add_widget(assenza_box)
 
@@ -1191,11 +1539,9 @@ class ClassevivaApp(App):
         return None
     
     def build(self):
-        # Prova a caricare credenziali salvate
         saved_creds = self.load_credentials()
         if saved_creds:
             self.login_screen = LoginScreen(self)
-            # Auto-login in background
             threading.Thread(
                 target=self.login,
                 args=(saved_creds['username'], saved_creds['password'])
@@ -1209,21 +1555,28 @@ class ClassevivaApp(App):
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
-            self.utente = classeviva.Utente(username, password)
-            loop.run_until_complete(self.utente.accedi())
-        
-            # Salva credenziali dopo login riuscito
+    
+            try:
+                self.utente = classeviva.Utente(username, password)
+                loop.run_until_complete(self.utente.accedi())
+            except Exception as e:
+                error_msg = str(e)
+                Clock.schedule_once(
+                    lambda dt: self.show_error(f'Login fallito: {error_msg}'),
+                    0
+                )
+                return
+    
             self.save_credentials(username, password)
-        
+    
             try:
                 carta = loop.run_until_complete(self.utente.carta())
                 name = carta.get('firstName', username)
             except:
                 name = username
-        
+
             Clock.schedule_once(lambda dt: self.show_main_screen(name), 0)
-            
+    
         except Exception as e:
             error_msg = f'Errore di login: {str(e)}'
             Clock.schedule_once(
@@ -1231,7 +1584,8 @@ class ClassevivaApp(App):
                 0
             )
         finally:
-            loop.close()
+            if loop:
+                loop.close()
     
     def show_main_screen(self, name):
         self.main_screen = MainScreen(self)
@@ -1251,7 +1605,7 @@ class ClassevivaApp(App):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            # Carica voti con retry
+            # Caricamento voti
             voti = None
             for attempt in range(3):
                 try:
@@ -1282,7 +1636,7 @@ class ClassevivaApp(App):
                     0
                 )
             
-            # Carica assenze con retry
+            # Caricamento assenze
             assenze = None
             for attempt in range(3):
                 try:
@@ -1310,15 +1664,14 @@ class ClassevivaApp(App):
         finally:
             if loop:
                 loop.close()
-    
+
     def do_logout(self):
-        # Elimina credenziali salvate
         try:
             if os.path.exists(self.credentials_file):
                 os.remove(self.credentials_file)
         except Exception as e:
             print(f'Errore eliminazione credenziali: {e}')
-    
+
         self.utente = None
         self.login_screen = LoginScreen(self)
         self.root.clear_widgets()
