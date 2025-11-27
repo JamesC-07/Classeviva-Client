@@ -1,44 +1,36 @@
 # Classeviva Client
 
-Un'applicazione desktop per visualizzare voti, medie e statistiche dal registro elettronico ClasseViva.
+Desktop app to see grades and statistics using Classeviva API: https://pypi.org/project/Classeviva.py/
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Kivy](https://img.shields.io/badge/kivy-2.3.1-green.svg)
 
-## Caratteristiche
+## Features
 
-- Accesso con credenziali ClasseViva
-- Lista completa dei voti con dettagli (materia, tipo, data, note)
-- Calcolo automatico delle medie divise per Q1 e Q2
-- Grafici per analizzare l'andamento scolastico:
-  - Statistiche generali (totale voti, numero materie, medie per quadrimestre)
-  - Media per materia con grafico a barre
-  - Distribuzione dei voti
+- Login/logout
+- Complete grades list (subject, type, date, notes...).
+- Averages separated for sections of year.
+- Graphs to see performance on subjects.
 
-## Installazione
+## Installation
 
-### Requisiti
-- Python 3.8 o superiore
-- pip (gestore pacchetti Python)
+### Dependencies
+- Python 3.8+
+- pip
 
-### 1. Clona il repository
+### 1. Clone the repository
 ```bash
 git clone https://github.com/JamesC-07/Classeviva-Client.git
 cd classeviva-client
 ```
 
-### 2. Installa le dipendenze
+### 2. Install the dependencies
 ```bash
 pip install kivy
 pip install classeviva
 ```
 
-Oppure:
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Avvia l'applicazione
+### 3. Start the application
 ```bash
 python classeviva_app.py
 ```
