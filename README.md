@@ -15,23 +15,17 @@ Desktop app to see grades and statistics using Classeviva API: https://pypi.org/
 
 ## Installation
 
-### Dependencies
-- Python 3.8+
-- pip
-
-### 1. Clone the repository
+You can either download the executable from the latest release, or clone the repository:
 ```bash
 git clone https://github.com/JamesC-07/Classeviva-Client.git
 cd classeviva-client
 ```
-
-### 2. Install the dependencies
+install the dependencies:
 ```bash
 pip install kivy
 pip install classeviva
 ```
-
-### 3. Start the application
+start the application:
 ```bash
 python classeviva_app.py
 ```
