@@ -11,6 +11,7 @@ Desktop app to see grades and statistics using Classeviva API: https://pypi.org/
 - Complete grades list (subject, type, date, notes...).
 - Averages separated for sections of year.
 - Graphs to see performance on subjects.
+- Absences and statistics based on that.
 
 ## Installation
 
