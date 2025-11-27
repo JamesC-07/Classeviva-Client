@@ -18,9 +18,11 @@ from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle, Line
 from kivy.uix.widget import Widget
 import classeviva
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import asyncio
+import json
+import os
 
 
 class LoginScreen(BoxLayout):
@@ -155,10 +157,84 @@ class MainScreen(BoxLayout):
         self.stats_tab.add_widget(self.stats_content)
         self.tabs.add_widget(self.stats_tab)
         
+        # Tab Assenze
+        self.assenze_tab = TabbedPanelItem(text='Assenze')
+        self.assenze_content = ScrollView()
+        self.assenze_layout = BoxLayout(
+            orientation='vertical',
+            spacing=dp(10),
+            size_hint_y=None,
+            padding=dp(10)
+        )
+        self.assenze_layout.bind(minimum_height=self.assenze_layout.setter('height'))
+        self.assenze_content.add_widget(self.assenze_layout)
+        self.assenze_tab.add_widget(self.assenze_content)
+        self.tabs.add_widget(self.assenze_tab)
+        
         self.add_widget(self.tabs)
         
         self.data_loaded = False
         self.voti_data = []
+        self.assenze_data = []
+    
+    def logout(self, instance):
+        self.app.do_logout()
+    
+    def update_user_info(self, name):
+        self.user_label.text = f'Benvenuto, {name}'
+    
+    def _calcola_giorni_scuola(self):
+        """Calcola i giorni di scuola dell'anno scolastico"""
+        oggi = datetime.now()
+        
+        # Determina inizio e fine anno scolastico
+        if oggi.month >= 9:
+            # Siamo nel primo periodo (settembre-dicembre)
+            inizio_anno = datetime(oggi.year, 9, 1)
+            fine_anno = datetime(oggi.year + 1, 6, 30)
+        else:
+            # Siamo nel secondo periodo (gennaio-giugno)
+            inizio_anno = datetime(oggi.year - 1, 9, 1)
+            fine_anno = datetime(oggi.year, 6, 30)
+        
+        # Calcola giorni totali escludendo weekend e festività principali
+        giorni_totali = 0
+        giorni_trascorsi = 0
+        
+        # Festività principali (approssimative)
+        festivita = [
+            (11, 1),  # Tutti i Santi
+            (12, 8),  # Immacolata
+            (12, 25), (12, 26),  # Natale
+            (1, 1), (1, 6),  # Capodanno ed Epifania
+            (4, 25),  # Liberazione
+            (5, 1),  # Festa del Lavoro
+            (6, 2),   # Festa della Repubblica
+        ]
+        
+        # Vacanze di Natale (approssimative: 23 dic - 6 gen)
+        # Vacanze di Pasqua (approssimative: variabili, stimiamo 1 settimana ad aprile)
+        
+        data_corrente = inizio_anno
+        while data_corrente <= fine_anno:
+            # Salta weekend
+            if data_corrente.weekday() < 5:  # 0-4 = lun-ven
+                # Salta festività
+                if (data_corrente.month, data_corrente.day) not in festivita:
+                    # Salta vacanze di Natale
+                    if not (data_corrente.month == 12 and data_corrente.day >= 23) and \
+                       not (data_corrente.month == 1 and data_corrente.day <= 6):
+                        # Salta vacanze pasquali (approssimazione)
+                        if not (data_corrente.month == 4 and 10 <= data_corrente.day <= 17):
+                            giorni_totali += 1
+                            if data_corrente <= oggi:
+                                giorni_trascorsi += 1
+            
+            data_corrente += timedelta(days=1)
+        
+        giorni_rimanenti = giorni_totali - giorni_trascorsi
+        
+        return giorni_totali, giorni_trascorsi, giorni_rimanenti
     
     def logout(self, instance):
         self.app.do_logout()
@@ -206,8 +282,8 @@ class MainScreen(BoxLayout):
             voto_box = BoxLayout(
                 orientation='horizontal',
                 size_hint_y=None,
-                height=dp(80),
-                padding=dp(10),
+                height=dp(100),
+                padding=dp(15),
                 spacing=dp(10)
             )
             
@@ -259,40 +335,57 @@ class MainScreen(BoxLayout):
             voto_right = BoxLayout(
                 orientation='vertical',
                 size_hint_x=0.7,
-                padding=dp(5)
+                padding=dp(5),
+                spacing=dp(2)
             )
-            voto_right.add_widget(Label(
+            
+            materia_label = Label(
                 text=f'[b]{materia}[/b]',
                 markup=True,
                 font_size='16sp',
-                size_hint_y=0.4,
+                size_hint_y=None,
+                height=dp(25),
                 halign='left',
                 valign='middle',
                 text_size=(Window.width * 0.6, None)
-            ))
-            voto_right.add_widget(Label(
+            )
+            voto_right.add_widget(materia_label)
+            
+            tipo_label = Label(
                 text=tipo,
                 font_size='14sp',
-                size_hint_y=0.3,
+                size_hint_y=None,
+                height=dp(20),
                 halign='left',
                 valign='middle',
                 text_size=(Window.width * 0.6, None)
-            ))
+            )
+            voto_right.add_widget(tipo_label)
+            
             if nota:
-                voto_right.add_widget(Label(
+                nota_label = Label(
                     text=nota,
-                    font_size='12sp',
-                    size_hint_y=0.3,
+                    font_size='11sp',
+                    size_hint_y=None,
+                    height=dp(25),
                     color=(0.7, 0.7, 0.7, 1),
                     halign='left',
                     valign='top',
                     text_size=(Window.width * 0.6, None)
-                ))
+                )
+                voto_right.add_widget(nota_label)
             
             voto_box.add_widget(voto_left)
             voto_box.add_widget(voto_right)
             
             self.voti_layout.add_widget(voto_box)
+            separator = Widget(size_hint_y=None, height=dp(1))
+            with separator.canvas:
+                Color(0.3, 0.3, 0.3, 0.5)
+                separator.rect = Rectangle(pos=separator.pos, size=separator.size)
+            separator.bind(pos=lambda *args: setattr(separator.rect, 'pos', separator.pos))
+            separator.bind(size=lambda *args: setattr(separator.rect, 'size', separator.size))
+            self.voti_layout.add_widget(separator)
         
         self.data_loaded = True
     
@@ -581,10 +674,10 @@ class MainScreen(BoxLayout):
         
         # Totale voti
         total_voti = sum(len(v) for v in materie_data.values())
-        stats_grid.add_widget(self._create_stat_box('📊 Voti Totali', str(total_voti), (0.2, 0.6, 1, 1)))
+        stats_grid.add_widget(self._create_stat_box('Voti Totali', str(total_voti), (0.2, 0.6, 1, 1)))
         
         # Materie
-        stats_grid.add_widget(self._create_stat_box('📚 Materie', str(len(materie_data)), (0.4, 0.7, 0.3, 1)))
+        stats_grid.add_widget(self._create_stat_box('Materie', str(len(materie_data)), (0.4, 0.7, 0.3, 1)))
         
         # Media Q1
         if voti_q1:
@@ -615,7 +708,7 @@ class MainScreen(BoxLayout):
         ))
         
         materie_ordinate = sorted(materie_data.items(), key=lambda x: sum(x[1])/len(x[1]), reverse=True)
-        for materia, voti in materie_ordinate[:10]:  # Top 10 materie
+        for materia, voti in materie_ordinate:  # Mostra TUTTE le materie
             if len(voti) > 0:
                 media = sum(voti) / len(voti)
                 self.stats_layout.add_widget(self._create_bar_chart(materia, media, len(voti)))
@@ -778,6 +871,299 @@ class MainScreen(BoxLayout):
         ))
         
         return box
+    
+    def display_assenze(self, assenze_data):
+        self.assenze_layout.clear_widgets()
+        self.assenze_data = assenze_data
+        
+        if not assenze_data:
+            self.assenze_layout.add_widget(Label(
+                text='Nessun dato sulle assenze disponibile',
+                size_hint_y=None,
+                height=dp(40)
+            ))
+            return
+        
+        # Conta le assenze
+        assenze_totali = 0
+        ritardi = 0
+        uscite_anticipate = 0
+        
+        for assenza in assenze_data:
+            evento_codice = assenza.get('evtCode', '')
+            if evento_codice == 'ABA0':  # Assenza
+                assenze_totali += 1
+            elif evento_codice == 'ABR0':  # Ritardo
+                ritardi += 1
+            elif evento_codice == 'ABU0':  # Uscita anticipata
+                uscite_anticipate += 1
+        
+        # Calcola giorni scuola
+        giorni_totali, giorni_trascorsi, giorni_rimanenti = self._calcola_giorni_scuola()
+        
+        # Limite assenze (25% dei giorni totali)
+        limite_assenze = int(giorni_totali * 0.25)
+        assenze_disponibili = limite_assenze - assenze_totali
+        percentuale_assenze = (assenze_totali / giorni_trascorsi * 100) if giorni_trascorsi > 0 else 0
+        percentuale_limite = (assenze_totali / limite_assenze * 100) if limite_assenze > 0 else 0
+        
+        # Titolo
+        self.assenze_layout.add_widget(Label(
+            text='[b]REPORT ASSENZE (APPROSSIMATO!)[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(50),
+            font_size='20sp'
+        ))
+        
+        # Card: Statistiche assenze
+        stats_card = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=dp(280),
+            padding=dp(10),
+            spacing=dp(10)
+        )
+        
+        stats_grid = GridLayout(
+            cols=2,
+            spacing=dp(10),
+            size_hint_y=None,
+            height=dp(260)
+        )
+        
+        # Assenze totali
+        color_assenze = (1, 0.3, 0.3, 1) if assenze_totali > limite_assenze * 0.7 else (0.2, 0.6, 1, 1)
+        stats_grid.add_widget(self._create_stat_box('Assenze', str(assenze_totali), color_assenze))
+        
+        # Ritardi
+        stats_grid.add_widget(self._create_stat_box('Ritardi', str(ritardi), (1, 0.7, 0.2, 1)))
+        
+        # Uscite anticipate
+        stats_grid.add_widget(self._create_stat_box('Uscite Antic.', str(uscite_anticipate), (0.9, 0.5, 0.2, 1)))
+        
+        # Percentuale assenze rispetto ai giorni trascorsi
+        stats_grid.add_widget(self._create_stat_box('% Assenze', f'{percentuale_assenze:.1f}%', color_assenze))
+        
+        # Percentuale giorni trascorsi
+        percentuale_anno = (giorni_trascorsi / giorni_totali * 100) if giorni_totali > 0 else 0
+        stats_grid.add_widget(self._create_stat_box('% Anno Trascorso', f'{percentuale_anno:.1f}%', (0.5, 0.7, 0.9, 1)))
+        
+        # Spazio vuoto per simmetria
+        stats_grid.add_widget(BoxLayout())
+        
+        stats_card.add_widget(stats_grid)
+        self.assenze_layout.add_widget(stats_card)
+        
+        # Sezione giorni scolastici
+        self.assenze_layout.add_widget(Label(
+            text='[b]Anno Scolastico[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(40),
+            font_size='16sp'
+        ))
+        
+        giorni_box = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=dp(150),
+            padding=dp(10),
+            spacing=dp(5)
+        )
+        
+        giorni_box.add_widget(Label(
+            text=f'Giorni scolastici totali: [b]{giorni_totali}[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(35),
+            font_size='14sp',
+            halign='left',
+            text_size=(Window.width - dp(40), None)
+        ))
+        
+        giorni_box.add_widget(Label(
+            text=f'Giorni trascorsi: [b]{giorni_trascorsi}[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(35),
+            font_size='14sp',
+            halign='left',
+            text_size=(Window.width - dp(40), None)
+        ))
+        
+        giorni_box.add_widget(Label(
+            text=f'Giorni rimanenti: [b]{giorni_rimanenti}[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(35),
+            font_size='14sp',
+            halign='left',
+            text_size=(Window.width - dp(40), None)
+        ))
+        
+        giorni_box.add_widget(Label(
+            text=f'Limite assenze (25%): [b]{limite_assenze}[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(35),
+            font_size='14sp',
+            halign='left',
+            text_size=(Window.width - dp(40), None),
+            color=(1, 0.6, 0, 1)
+        ))
+        
+        self.assenze_layout.add_widget(giorni_box)
+        
+        # Barra progresso assenze
+        self.assenze_layout.add_widget(Label(
+            text='[b]Limite Annuale Assenze[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(40),
+            font_size='16sp'
+        ))
+        
+        # Messaggio stato
+        if assenze_disponibili > 0:
+            stato_text = f'Puoi ancora fare [b]{assenze_disponibili}[/b] assenze'
+            stato_color = (0, 0.8, 0, 1) if assenze_disponibili > limite_assenze * 0.3 else (1, 0.6, 0, 1)
+        else:
+            stato_text = f'HAI SUPERATO IL LIMITE DI {abs(assenze_disponibili)} ASSENZE!'
+            stato_color = (1, 0, 0, 1)
+        
+        self.assenze_layout.add_widget(Label(
+            text=stato_text,
+            markup=True,
+            size_hint_y=None,
+            height=dp(40),
+            font_size='15sp',
+            color=stato_color
+        ))
+        
+        # Barra progresso
+        progress_box = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            height=dp(100),
+            padding=dp(10),
+            spacing=dp(5)
+        )
+        
+        bar_container = BoxLayout(size_hint_y=None, height=dp(50))
+        bar_widget = Widget()
+        
+        def draw_progress_bar(*args):
+            bar_widget.canvas.clear()
+            with bar_widget.canvas:
+                # Sfondo
+                Color(0.9, 0.9, 0.9, 1)
+                Rectangle(pos=bar_widget.pos, size=bar_widget.size)
+                
+                # Barra progresso
+                if percentuale_limite <= 70:
+                    Color(0, 0.8, 0, 0.8)
+                elif percentuale_limite <= 90:
+                    Color(1, 0.7, 0, 0.8)
+                else:
+                    Color(1, 0.2, 0.2, 0.8)
+                
+                bar_width = min(percentuale_limite / 100.0, 1.0) * bar_widget.width
+                Rectangle(pos=bar_widget.pos, size=(bar_width, bar_widget.height))
+                
+                # Linea al 70% (soglia di attenzione)
+                Color(1, 0.7, 0, 0.5)
+                line_x = bar_widget.x + 0.7 * bar_widget.width
+                Line(points=[line_x, bar_widget.y, line_x, bar_widget.y + bar_widget.height], width=2)
+                
+                # Linea al 100% (limite)
+                Color(1, 0, 0, 0.7)
+                line_x = bar_widget.x + bar_widget.width
+                Line(points=[line_x, bar_widget.y, line_x, bar_widget.y + bar_widget.height], width=2)
+        
+        bar_widget.bind(pos=draw_progress_bar, size=draw_progress_bar)
+        bar_container.add_widget(bar_widget)
+        progress_box.add_widget(bar_container)
+        
+        progress_box.add_widget(Label(
+            text=f'{assenze_totali} / {limite_assenze} assenze ({percentuale_limite:.1f}%)',
+            size_hint_y=None,
+            height=dp(30),
+            font_size='14sp'
+        ))
+        
+        self.assenze_layout.add_widget(progress_box)
+        
+        # Lista dettagliata assenze
+        self.assenze_layout.add_widget(Label(
+            text='[b]Dettaglio Assenze[/b]',
+            markup=True,
+            size_hint_y=None,
+            height=dp(50),
+            font_size='16sp'
+        ))
+        
+        # Ordina per data
+        assenze_ordinate = sorted(assenze_data, key=lambda x: x.get('evtDate', ''), reverse=True)
+        
+        for assenza in assenze_ordinate[:20]:  # Mostra ultime 20
+            evento_codice = assenza.get('evtCode', '')
+            data = assenza.get('evtDate', 'N/A')
+            giustificata = assenza.get('isJustified', False)
+            
+            # Determina tipo e colore
+            if evento_codice == 'ABA0':
+                tipo = 'Assenza'
+                colore = (1, 0.3, 0.3, 1)
+            elif evento_codice == 'ABR0':
+                tipo = 'Ritardo'
+                colore = (1, 0.7, 0.2, 1)
+            elif evento_codice == 'ABU0':
+                tipo = 'Uscita Anticipata'
+                colore = (0.9, 0.5, 0.2, 1)
+            else:
+                tipo = 'Altro'
+                colore = (0.5, 0.5, 0.5, 1)
+            
+            stato = 'Giustificata' if giustificata else 'Da giustificare'
+            stato_colore = (0, 0.8, 0, 1) if giustificata else (1, 0.5, 0, 1)
+            
+            assenza_box = BoxLayout(
+                orientation='horizontal',
+                size_hint_y=None,
+                height=dp(60),
+                padding=dp(10),
+                spacing=dp(10)
+            )
+            
+            # Data e tipo
+            left_box = BoxLayout(orientation='vertical', size_hint_x=0.4)
+            left_box.add_widget(Label(
+                text=data,
+                font_size='12sp',
+                size_hint_y=0.4,
+                color=(0.6, 0.6, 0.6, 1)
+            ))
+            left_box.add_widget(Label(
+                text=tipo,
+                font_size='14sp',
+                size_hint_y=0.6,
+                color=colore
+            ))
+            assenza_box.add_widget(left_box)
+            
+            # Stato giustificazione
+            assenza_box.add_widget(Label(
+                text=stato,
+                size_hint_x=0.6,
+                font_size='13sp',
+                color=stato_colore,
+                halign='right',
+                valign='middle',
+                text_size=(Window.width * 0.5, None)
+            ))
+            
+            self.assenze_layout.add_widget(assenza_box)
 
 
 class ClassevivaApp(App):
@@ -786,25 +1172,56 @@ class ClassevivaApp(App):
         self.utente = None
         self.login_screen = None
         self.main_screen = None
+        self.credentials_file = os.path.join(os.path.expanduser('~'), '.classeviva_credentials.json')
+    
+    def save_credentials(self, username, password):
+        try:
+            with open(self.credentials_file, 'w') as f:
+                json.dump({'username': username, 'password': password}, f)
+        except Exception as e:
+            print(f'Errore salvataggio credenziali: {e}')
+
+    def load_credentials(self):
+        try:
+            if os.path.exists(self.credentials_file):
+                with open(self.credentials_file, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f'Errore caricamento credenziali: {e}')
+        return None
     
     def build(self):
-        self.login_screen = LoginScreen(self)
-        return self.login_screen
+        # Prova a caricare credenziali salvate
+        saved_creds = self.load_credentials()
+        if saved_creds:
+            self.login_screen = LoginScreen(self)
+            # Auto-login in background
+            threading.Thread(
+                target=self.login,
+                args=(saved_creds['username'], saved_creds['password'])
+            ).start()
+            return self.login_screen
+        else:
+            self.login_screen = LoginScreen(self)
+            return self.login_screen
     
     def login(self, username, password):
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+        
             self.utente = classeviva.Utente(username, password)
             loop.run_until_complete(self.utente.accedi())
-            
+        
+            # Salva credenziali dopo login riuscito
+            self.save_credentials(username, password)
+        
             try:
                 carta = loop.run_until_complete(self.utente.carta())
                 name = carta.get('firstName', username)
             except:
                 name = username
-            
+        
             Clock.schedule_once(lambda dt: self.show_main_screen(name), 0)
             
         except Exception as e:
@@ -864,6 +1281,29 @@ class ClassevivaApp(App):
                     lambda dt: self.main_screen.display_voti([]),
                     0
                 )
+            
+            # Carica assenze con retry
+            assenze = None
+            for attempt in range(3):
+                try:
+                    assenze = loop.run_until_complete(self.utente.assenze())
+                    if assenze is not None:
+                        break
+                except Exception as e:
+                    print(f'Tentativo {attempt + 1} caricamento assenze fallito: {e}')
+                    if attempt < 2:
+                        Clock.schedule_once(lambda dt: None, 0.5)
+            
+            if assenze is not None:
+                Clock.schedule_once(
+                    lambda dt: self.main_screen.display_assenze(assenze),
+                    0
+                )
+            else:
+                Clock.schedule_once(
+                    lambda dt: self.main_screen.display_assenze([]),
+                    0
+                )
                 
         except Exception as e:
             print(f'Errore caricamento dati: {e}')
@@ -872,6 +1312,13 @@ class ClassevivaApp(App):
                 loop.close()
     
     def do_logout(self):
+        # Elimina credenziali salvate
+        try:
+            if os.path.exists(self.credentials_file):
+                os.remove(self.credentials_file)
+        except Exception as e:
+            print(f'Errore eliminazione credenziali: {e}')
+    
         self.utente = None
         self.login_screen = LoginScreen(self)
         self.root.clear_widgets()
@@ -879,5 +1326,4 @@ class ClassevivaApp(App):
 
 
 if __name__ == '__main__':
-
     ClassevivaApp().run()
