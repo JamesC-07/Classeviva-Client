@@ -27,5 +27,5 @@ pip install classeviva
 ```
 start the application:
 ```bash
-python classeviva_app.py
+python main.py
 ```
