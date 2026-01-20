@@ -4,6 +4,7 @@ Desktop app to see grades and statistics using Classeviva API: https://pypi.org/
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Kivy](https://img.shields.io/badge/kivy-2.3.1-green.svg)
+![Flutter](flutter.svg)
 
 ## Features
 
@@ -14,7 +15,9 @@ Desktop app to see grades and statistics using Classeviva API: https://pypi.org/
 - Absences and statistics based on that.
 
 ## Installation
-
+### Android
+Download the apk of the latest release.
+### Windows
 You can either download the executable from the latest release, or clone the repository:
 ```bash
 git clone https://github.com/JamesC-07/Classeviva-Client.git
