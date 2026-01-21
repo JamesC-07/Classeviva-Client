@@ -1,34 +1,16 @@
-# Classeviva Client
+# classeviva_client
 
-Desktop app to see grades and statistics using Classeviva API: https://pypi.org/project/Classeviva.py/
+A new Flutter project.
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![Kivy](https://img.shields.io/badge/kivy-2.3.1-green.svg)
-![Flutter](flutter.svg)
+## Getting Started
 
-## Features
+This project is a starting point for a Flutter application.
 
-- Login/logout
-- Complete grades list (subject, type, date, notes...).
-- Averages separated for sections of year.
-- Graphs to see performance on subjects.
-- Absences and statistics based on that.
+A few resources to get you started if this is your first Flutter project:
 
-## Installation
-### Android
-Download the apk of the latest release.
-### Windows
-You can either download the executable from the latest release, or clone the repository:
-```bash
-git clone https://github.com/JamesC-07/Classeviva-Client.git
-cd classeviva-client
-```
-install the dependencies:
-```bash
-pip install kivy
-pip install classeviva
-```
-start the application:
-```bash
-python main.py
-```
+- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
