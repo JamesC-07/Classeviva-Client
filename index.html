@@ -416,6 +416,7 @@
                 <div class="spinner"></div>
             </div>
         </div>
+
         <div class="bottom-nav">
             <button class="nav-item active" data-tab="voti">
                 <div class="nav-icon">⭐</div>
@@ -432,14 +433,10 @@
     <div id="detailScreen" class="screen detail-screen"></div>
 
     <script>
-// Using AllOrigins proxy - works immediately, no setup needed
-const API_BASE = 'https://web.spaggiari.eu/rest/v1';
-const API_KEY = 'Tg1NWEwNGIgIC0K';
-
-// Proxy function
-function getProxyUrl(url) {
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-}
+        // Replace with your Cloudflare Worker URL after deploying
+        const CORS_PROXY = 'https://https://classevivaclient.james-capelli.workers.dev/?url=';
+        const API_BASE = 'https://web.spaggiari.eu/rest/v1';
+        const API_KEY = 'Tg1NWEwNGIgIC0K';
         
         let currentUser = null;
         let currentData = { grades: [], absences: [] };
@@ -495,7 +492,7 @@ function getProxyUrl(url) {
         });
 
         async function login(username, password) {
-            const response = await fetch(getProxyUrl(`${API_BASE}/auth/login`), {
+            const response = await fetch(CORS_PROXY + encodeURIComponent(`${API_BASE}/auth/login`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -558,7 +555,7 @@ function getProxyUrl(url) {
         }
 
         async function apiGet(endpoint) {
-            const response = await fetch(getProxyUrl(`${API_BASE}${endpoint}`), {
+            const response = await fetch(CORS_PROXY + encodeURIComponent(`${API_BASE}${endpoint}`), {
                 headers: {
                     'Z-Dev-Apikey': API_KEY,
                     'Z-Auth-Token': currentUser.token,
