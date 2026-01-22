@@ -1,3 +1,8 @@
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Kivy](https://img.shields.io/badge/Kivy-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
 # Classeviva Client
 
 A comprehensive client application for accessing Classeviva (Spaggiari) school data, available in both Flutter for Android and a Python/Kivy implementation for desktop.
@@ -5,16 +10,6 @@ A comprehensive client application for accessing Classeviva (Spaggiari) school d
 ## Overview
 
 This project provides unofficial clients for the Classeviva platform used by many Italian schools. It allows students to view their grades, absences, and academic statistics in a modern, user-friendly interface.
-
-## Technologies & Frameworks
-
-### Flutter Implementation
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
-
-### Python/Kivy Implementation
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Kivy](https://img.shields.io/badge/Kivy-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
 ## Features
 
