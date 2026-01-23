@@ -1,1002 +1,666 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Classeviva Client</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classeviva Web</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #121212;
-            color: #e0e0e0;
-            min-height: 100vh;
-            -webkit-font-smoothing: antialiased;
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #121212;
+      color: #e0e0e0;
+      line-height: 1.6;
+    }
 
-        .screen {
-            display: none;
-        }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-        .screen.active {
-            display: block;
-        }
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 40px;
+      background: #1e1e1e;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
 
-        /* Login Screen */
-        .login-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 24px;
-        }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2196f3;
+    }
 
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-        }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 16px;
+    }
 
-        .login-title {
-            font-size: 28px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 48px;
-        }
+    input:focus {
+      outline: none;
+      border-color: #2196f3;
+    }
 
-        .input-group {
-            margin-bottom: 16px;
-        }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
 
-        input {
-            width: 100%;
-            padding: 14px;
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #e0e0e0;
-            font-size: 16px;
-        }
+    button:hover {
+      background: #1976d2;
+    }
 
-        input:focus {
-            outline: none;
-            border-color: #2196f3;
-        }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
 
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: #2196f3;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 500;
-            cursor: pointer;
-            margin-top: 24px;
-        }
+    .error {
+      color: #f44336;
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+    }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+    .app-header {
+      background: #1e1e1e;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
 
-        .error-message {
-            color: #f44336;
-            text-align: center;
-            margin-top: 16px;
-            font-size: 14px;
-        }
+    .logout-btn {
+      width: auto;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
 
-        .spinner {
-            border: 3px solid #333;
-            border-top: 3px solid white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: #1e1e1e;
+      padding: 16px 20px;
+      border-bottom: 1px solid #333;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+    .tab {
+      padding: 10px 20px;
+      background: transparent;
+      color: #888;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
 
-        /* Main Screen */
-        .app-header {
-            background: #1e1e1e;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-        }
+    .tab.active {
+      background: #2196f3;
+      color: white;
+    }
 
-        .header-title {
-            font-size: 18px;
-            font-weight: 500;
-        }
+    .tab-content {
+      display: none;
+    }
 
-        .logout-btn {
-            background: none;
-            border: none;
-            color: #2196f3;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 8px;
-        }
+    .tab-content.active {
+      display: block;
+    }
 
-        .content {
-            padding: 16px;
-            padding-bottom: 80px;
-        }
+    .card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
 
-        .loading-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-        }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
 
-        /* Cards */
-        .card {
-            background: #1e1e1e;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
+    .stat-card {
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
 
-        .card-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
-        }
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
 
-        .stats-row {
-            display: flex;
-            gap: 12px;
-        }
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
 
-        .stat-card {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
+    .grade-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: #252525;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
 
-        .stat-label {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 4px;
-        }
+    .grade-value {
+      min-width: 80px;
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+    }
 
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
+    .grade-info {
+      flex: 1;
+    }
 
-        .media-item {
-            margin-bottom: 12px;
-            cursor: pointer;
-        }
+    .subject-bar {
+      margin-bottom: 16px;
+      cursor: pointer;
+      padding: 12px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
 
-        .media-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
+    .subject-bar:hover {
+      background: #252525;
+    }
 
-        .media-name {
-            font-size: 14px;
-            font-weight: 500;
-            flex: 1;
-        }
+    .subject-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
 
-        .media-value {
-            font-size: 16px;
-            font-weight: bold;
-            margin-left: 8px;
-        }
+    .progress-bar {
+      height: 8px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+    }
 
-        .warning-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(244, 67, 54, 0.2);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            color: #f44336;
-            margin-left: 8px;
-        }
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
 
-        .progress-bar {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-        }
+    .warning {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-        .progress-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s;
-        }
+    .loading {
+      text-align: center;
+      padding: 40px;
+    }
 
-        .grade-card {
-            background: #1e1e1e;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            display: flex;
-            gap: 12px;
-        }
+    .spinner {
+      border: 4px solid #333;
+      border-top: 4px solid #2196f3;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
 
-        .grade-value {
-            min-width: 80px;
-            text-align: center;
-        }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        .grade-number {
-            font-size: 32px;
-            font-weight: bold;
-        }
+    .hidden {
+      display: none;
+    }
 
-        .grade-date {
-            font-size: 10px;
-            color: #999;
-            margin-top: 4px;
-        }
+    .setup-notice {
+      background: #ff9800;
+      color: #000;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
 
-        .grade-details {
-            flex: 1;
-        }
-
-        .grade-subject {
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .grade-type {
-            font-size: 13px;
-            color: #999;
-        }
-
-        .grade-note {
-            font-size: 11px;
-            color: #999;
-            margin-top: 4px;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #1e1e1e;
-            border-top: 1px solid #333;
-            display: flex;
-            padding: 8px 0;
-            padding-bottom: env(safe-area-inset-bottom, 8px);
-        }
-
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: #999;
-        }
-
-        .nav-item.active {
-            color: #2196f3;
-        }
-
-        .nav-icon {
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-
-        .nav-label {
-            font-size: 12px;
-        }
-
-        .section-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
-            margin-top: 16px;
-        }
-
-        .absence-card {
-            background: #1e1e1e;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .absence-info {
-            flex: 1;
-        }
-
-        .absence-type {
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .absence-date {
-            font-size: 12px;
-            color: #999;
-        }
-
-        .absence-badge {
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
-
-        .progress-section {
-            margin-bottom: 24px;
-        }
-
-        .progress-label {
-            font-size: 14px;
-            color: #999;
-            margin-bottom: 8px;
-        }
-
-        .progress-bar-large {
-            height: 24px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .detail-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #121212;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-    </style>
+    .setup-notice strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+  </style>
 </head>
 <body>
-    <!-- Splash/Loading Screen -->
-    <div id="splashScreen" class="screen active">
-        <div class="loading-screen">
-            <div class="spinner"></div>
-        </div>
+  <div id="loginScreen" class="login-container">
+    <h1>Classeviva Web</h1>
+    <input type="text" id="username" placeholder="Username (es. S1234567C)">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()" id="loginBtn">Accedi</button>
+    <div id="loginError" class="error"></div>
+  </div>
+
+  <div id="appScreen" class="hidden">
+    <div class="app-header">
+      <h2>Benvenuto, <span id="userName"></span></h2>
+      <button class="logout-btn" onclick="logout()">Esci</button>
     </div>
 
-    <!-- Login Screen -->
-    <div id="loginScreen" class="screen login-screen">
-        <div class="login-container">
-            <h1 class="login-title">Classeviva Client</h1>
-            <div class="input-group">
-                <input type="text" id="username" placeholder="Username (es. S1234567C)">
-            </div>
-            <div class="input-group">
-                <input type="password" id="password" placeholder="Password">
-            </div>
-            <button class="btn" id="loginBtn">Accedi</button>
-            <div id="loginError" class="error-message"></div>
-        </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('voti')">📊 Voti</button>
+      <button class="tab" onclick="switchTab('assenze')">🚫 Assenze</button>
     </div>
 
-    <!-- Main Screen -->
-    <div id="mainScreen" class="screen">
-        <div class="app-header">
-            <div class="header-title">Benvenuto, <span id="userName"></span></div>
-            <button class="logout-btn" id="logoutBtn">Esci</button>
+    <div class="container">
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Caricamento dati...</p>
+      </div>
+
+      <div id="votiTab" class="tab-content active">
+        <div class="card">
+          <h3>MEDIE GENERALI</h3>
+          <div class="stats-grid" id="generalStats"></div>
         </div>
 
-        <div id="mainContent" class="content">
-            <div class="loading-screen">
-                <div class="spinner"></div>
-            </div>
+        <div class="card">
+          <h3>MEDIE PER MATERIA (Q<span id="currentQ"></span>)</h3>
+          <div id="subjectStats"></div>
         </div>
 
-        <div class="bottom-nav">
-            <button class="nav-item active" data-tab="voti">
-                <div class="nav-icon">⭐</div>
-                <div class="nav-label">Voti</div>
-            </button>
-            <button class="nav-item" data-tab="assenze">
-                <div class="nav-icon">📅</div>
-                <div class="nav-label">Assenze</div>
-            </button>
+        <div class="card">
+          <h3>TUTTI I VOTI</h3>
+          <div id="gradesList"></div>
         </div>
+      </div>
+
+      <div id="assenzeTab" class="tab-content">
+        <div class="card">
+          <h3>PROGRESSO ASSENZE</h3>
+          <div id="absenceProgress"></div>
+        </div>
+
+        <div class="card">
+          <h3>STATISTICHE</h3>
+          <div class="stats-grid" id="absenceStats"></div>
+        </div>
+
+        <div class="card">
+          <h3>DETTAGLIO</h3>
+          <div id="absenceList"></div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Detail Screen -->
-    <div id="detailScreen" class="screen detail-screen"></div>
+  <script>
+    // ⚠️ REPLACE THIS with your Vercel deployment URL
+    const API_URL = 'YOUR_VERCEL_URL/api/classeviva';
+    
+    let authData = null;
+    let gradesData = [];
+    let absencesData = [];
 
-    <script>
-        // Replace with your Cloudflare Worker URL after deploying
-        const CORS_PROXY = 'https://https://classevivaclient.james-capelli.workers.dev/?url=';
-        const API_BASE = 'https://web.spaggiari.eu/rest/v1';
-        const API_KEY = 'Tg1NWEwNGIgIC0K';
+    // Check if already logged in
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem('classeviva_auth');
+      if (saved) {
+        authData = JSON.parse(saved);
+        autoLogin();
+      }
+    });
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('loginBtn');
+      const error = document.getElementById('loginError');
+
+      if (!username || !password) {
+        error.textContent = 'Inserisci username e password';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Accesso in corso...';
+      error.textContent = '';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'login', username, password })
+        });
+
+        if (!res.ok) throw new Error('Login fallito');
+
+        const data = await res.json();
+        authData = { ...data, username, password };
+        localStorage.setItem('classeviva_auth', JSON.stringify(authData));
+
+        await loadUserData();
+      } catch (e) {
+        error.textContent = 'Login fallito: ' + e.message;
+        btn.disabled = false;
+        btn.textContent = 'Accedi';
+      }
+    }
+
+    async function autoLogin() {
+      try {
+        await loadUserData();
+      } catch (e) {
+        localStorage.removeItem('classeviva_auth');
+        authData = null;
+        document.getElementById('loginScreen').classList.remove('hidden');
+      }
+    }
+
+    async function loadUserData() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      document.getElementById('loading').classList.remove('hidden');
+
+      try {
+        const [carta, voti, assenze] = await Promise.all([
+          apiCall('carta'),
+          apiCall('voti'),
+          apiCall('assenze')
+        ]);
+
+        const nome = carta.firstName || authData.username;
+        document.getElementById('userName').textContent = nome;
+
+        gradesData = voti;
+        absencesData = assenze;
+
+        renderGrades();
+        renderAbsences();
+      } catch (e) {
+        alert('Errore caricamento dati: ' + e.message);
+      } finally {
+        document.getElementById('loading').classList.add('hidden');
+      }
+    }
+
+    async function apiCall(action) {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          token: authData.token,
+          userId: authData.userId
+        })
+      });
+
+      if (!res.ok) throw new Error(`API error: ${action}`);
+      return res.json();
+    }
+
+    function logout() {
+      localStorage.removeItem('classeviva_auth');
+      location.reload();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tab + 'Tab').classList.add('active');
+    }
+
+    function determineQuarter(dateStr) {
+      const d = new Date(dateStr);
+      if (d.getMonth() >= 8 || (d.getMonth() === 0 && d.getDate() <= 28)) return 1;
+      if ((d.getMonth() === 0 && d.getDate() > 28) || (d.getMonth() >= 1 && d.getMonth() <= 5)) return 2;
+      return 0;
+    }
+
+    function parseGrade(val) {
+      const clean = val.replace(/[,+\-]/g, '.').replace('½', '.5');
+      const num = parseFloat(clean);
+      return isNaN(num) ? null : num;
+    }
+
+    function renderGrades() {
+      const now = new Date();
+      const currentQ = (now.getMonth() >= 8 || (now.getMonth() === 0 && now.getDate() <= 28)) ? 1 : 2;
+      document.getElementById('currentQ').textContent = currentQ;
+
+      let q1Grades = [], q2Grades = [], allGrades = [];
+      let bySubject = {};
+      let bySubjectByQ = {};
+
+      gradesData.forEach(g => {
+        if (g.color === 'blue') return;
         
-        let currentUser = null;
-        let currentData = { grades: [], absences: [] };
-        let currentTab = 'voti';
-
-        // Initialize
-        window.addEventListener('load', () => {
-            checkSavedCredentials();
-        });
-
-        async function checkSavedCredentials() {
-            const username = localStorage.getItem('cv_username');
-            const password = localStorage.getItem('cv_password');
-
-            if (username && password) {
-                await autoLogin(username, password);
-            } else {
-                showScreen('loginScreen');
-            }
-        }
-
-        async function autoLogin(username, password) {
-            try {
-                await login(username, password);
-            } catch (e) {
-                showScreen('loginScreen');
-            }
-        }
-
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            const errorEl = document.getElementById('loginError');
-            const btn = document.getElementById('loginBtn');
-
-            errorEl.textContent = '';
-
-            if (!username || !password) {
-                errorEl.textContent = 'Inserisci username e password';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div>';
-
-            try {
-                await login(username, password);
-            } catch (e) {
-                errorEl.textContent = 'Login fallito: ' + e.message;
-                btn.disabled = false;
-                btn.textContent = 'Accedi';
-            }
-        });
-
-        async function login(username, password) {
-            const response = await fetch(CORS_PROXY + encodeURIComponent(`${API_BASE}/auth/login`), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Z-Dev-Apikey': API_KEY,
-                    'User-Agent': 'CVVS/std/4.2.3 Android/12',
-                },
-                body: JSON.stringify({
-                    ident: null,
-                    pass: password,
-                    uid: username
-                })
-            });
-
-            if (response.status === 422) {
-                throw new Error('Username o password non validi');
-            }
-
-            if (!response.ok) {
-                throw new Error('Login fallito');
-            }
-
-            const data = await response.json();
-            const token = data.token;
-            const userId = (data.ident || '').replace(/[^0-9]/g, '');
-
-            if (!token || !userId) {
-                throw new Error('Risposta login non valida');
-            }
-
-            currentUser = { username, password, token, userId };
-            
-            localStorage.setItem('cv_username', username);
-            localStorage.setItem('cv_password', password);
-
-            await loadMainScreen();
-        }
-
-        async function loadMainScreen() {
-            showScreen('mainScreen');
-            
-            try {
-                const [card, grades, absences] = await Promise.all([
-                    apiGet(`/students/${currentUser.userId}/card`),
-                    apiGet(`/students/${currentUser.userId}/grades`),
-                    apiGet(`/students/${currentUser.userId}/absences/details`)
-                ]);
-
-                const name = card.card?.firstName || currentUser.username;
-                document.getElementById('userName').textContent = name;
-
-                currentData = {
-                    grades: grades.grades || [],
-                    absences: absences.events || []
-                };
-
-                renderContent();
-            } catch (e) {
-                alert('Errore caricamento dati: ' + e.message);
-            }
-        }
-
-        async function apiGet(endpoint) {
-            const response = await fetch(CORS_PROXY + encodeURIComponent(`${API_BASE}${endpoint}`), {
-                headers: {
-                    'Z-Dev-Apikey': API_KEY,
-                    'Z-Auth-Token': currentUser.token,
-                    'User-Agent': 'CVVS/std/4.2.3 Android/12',
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            return await response.json();
-        }
-
-        function renderContent() {
-            const content = document.getElementById('mainContent');
-            content.innerHTML = currentTab === 'voti' ? renderGrades() : renderAbsences();
-        }
-
-        function renderGrades() {
-            const stats = calculateGradeStats();
-            const now = new Date();
-            const currentQuarter = (now.getMonth() >= 8 || (now.getMonth() === 0 && now.getDate() <= 28)) ? 1 : 2;
-
-            let html = `
-                <div class="card" style="background: rgba(33, 150, 243, 0.1);">
-                    <div class="card-title">MEDIE GENERALI</div>
-                    <div class="stats-row">
-                        <div class="stat-card" style="background: ${stats.totale >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                            <div class="stat-label">Media Totale</div>
-                            <div class="stat-value" style="color: ${stats.totale >= 6 ? '#4caf50' : '#f44336'}">
-                                ${stats.totale > 0 ? stats.totale.toFixed(2) : 'N/A'}
-                            </div>
-                        </div>
-                        <div class="stat-card" style="background: ${stats.q1 >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                            <div class="stat-label">Q1</div>
-                            <div class="stat-value" style="color: ${stats.q1 >= 6 ? '#4caf50' : '#f44336'}">
-                                ${stats.q1 > 0 ? stats.q1.toFixed(2) : 'N/A'}
-                            </div>
-                        </div>
-                        <div class="stat-card" style="background: ${stats.q2 >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                            <div class="stat-label">Q2</div>
-                            <div class="stat-value" style="color: ${stats.q2 >= 6 ? '#4caf50' : '#f44336'}">
-                                ${stats.q2 > 0 ? stats.q2.toFixed(2) : 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card" style="background: rgba(156, 39, 176, 0.1);">
-                    <div class="card-title">MEDIE PER MATERIA (Q${currentQuarter})</div>
-            `;
-
-            stats.subjects.forEach(subj => {
-                const avg = subj.quarterAvgs[currentQuarter] || 0;
-                const count = subj.quarterCounts[currentQuarter] || 0;
-                const hasWarning = count < 3;
-                const color = avg >= 6 ? '#4caf50' : '#f44336';
-
-                html += `
-                    <div class="media-item" onclick="showSubjectDetail('${subj.name.replace(/'/g, "\\'")}')">
-                        <div class="media-header">
-                            <div class="media-name">${subj.name}</div>
-                            ${hasWarning ? `<span class="warning-badge">⚠ solo ${count} voti</span>` : ''}
-                            <div class="media-value" style="color: ${color}">
-                                ${avg > 0 ? avg.toFixed(2) : 'N/A'}
-                            </div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${(avg / 10 * 100).toFixed(0)}%; background: ${color}"></div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += '</div><div class="section-title">TUTTI I VOTI</div>';
-
-            const sorted = [...currentData.grades].sort((a, b) => {
-                try {
-                    return new Date(b.evtDate) - new Date(a.evtDate);
-                } catch {
-                    return 0;
-                }
-            });
-
-            sorted.forEach(grade => {
-                const value = grade.displayValue || grade.decimalValue?.toString() || 'N/A';
-                const subject = grade.subjectDesc || 'N/A';
-                const date = grade.evtDate || 'N/A';
-                const type = grade.componentDesc || 'N/A';
-                const note = grade.notesForFamily || '';
-                const color = grade.color || '';
-                const isBlue = color === 'blue';
-                const quarter = determineQuarter(date);
-
-                let gradeColor = '#999';
-                if (isBlue) {
-                    gradeColor = '#2196f3';
-                } else {
-                    const val = parseGrade(value);
-                    if (val !== null) {
-                        gradeColor = val >= 6 ? '#4caf50' : '#f44336';
-                    }
-                }
-
-                html += `
-                    <div class="grade-card">
-                        <div class="grade-value">
-                            <div class="grade-number" style="color: ${gradeColor}">${value}</div>
-                            <div class="grade-date">${date}${quarter > 0 ? ' [Q' + quarter + ']' : ''}</div>
-                        </div>
-                        <div class="grade-details">
-                            <div class="grade-subject">${subject}</div>
-                            <div class="grade-type">${type}</div>
-                            ${note ? `<div class="grade-note">${note}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            return html;
-        }
-
-        function renderAbsences() {
-            const counts = countAbsences();
-            const progress = calculateAbsenceProgress(counts.totali);
-
-            let html = `
-                <div class="card" style="background: rgba(255, 152, 0, 0.1);">
-                    <div class="card-title">PROGRESSO ASSENZE</div>
-                    <div class="progress-section">
-                        <div class="progress-label">Anno trascorso: ${progress.yearPercent.toFixed(1)}%</div>
-                        <div class="progress-bar-large">
-                            <div class="progress-fill" style="width: ${progress.yearPercent}%; background: #2196f3"></div>
-                        </div>
-                    </div>
-                    <div class="progress-section">
-                        <div class="progress-label">Assenze: ${progress.absences} / ${progress.maxAbsences} (${progress.absencePercent.toFixed(1)}%)</div>
-                        <div class="progress-bar-large">
-                            <div class="progress-fill" style="width: ${progress.absencePercent}%; background: ${progress.absencePercent > 80 ? '#f44336' : progress.absencePercent > 50 ? '#ff9800' : '#4caf50'}"></div>
-                        </div>
-                    </div>
-                    ${progress.absencePercent > progress.yearPercent ? `
-                        <div style="margin-top: 12px; padding: 8px; background: rgba(244, 67, 54, 0.2); border-radius: 8px; display: flex; align-items: center; gap: 8px;">
-                            <span style="color: #f44336;">⚠</span>
-                            <span style="color: #f44336; font-size: 12px;">Attenzione: stai facendo più assenze del dovuto!</span>
-                        </div>
-                    ` : ''}
-                </div>
-
-                <div class="section-title">STATISTICHE ASSENZE</div>
-                <div class="stats-row" style="margin-bottom: 12px;">
-                    <div class="stat-card" style="background: rgba(244, 67, 54, 0.2);">
-                        <div class="stat-label">Assenze</div>
-                        <div class="stat-value" style="color: #f44336">${counts.totali}</div>
-                    </div>
-                    <div class="stat-card" style="background: rgba(255, 152, 0, 0.2);">
-                        <div class="stat-label">Ritardi</div>
-                        <div class="stat-value" style="color: #ff9800">${counts.ritardi}</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="background: rgba(255, 87, 34, 0.2);">
-                    <div class="stat-label">Uscite Anticipate</div>
-                    <div class="stat-value" style="color: #ff5722">${counts.uscite}</div>
-                </div>
-
-                <div class="section-title">DETTAGLIO</div>
-            `;
-
-            currentData.absences.slice(0, 20).forEach(abs => {
-                const code = abs.evtCode || '';
-                const date = abs.evtDate || 'N/A';
-                const justified = abs.isJustified || false;
-
-                let type, color;
-                if (code === 'ABA0') {
-                    type = 'Assenza';
-                    color = '#f44336';
-                } else if (code === 'ABR0') {
-                    type = 'Ritardo';
-                    color = '#ff9800';
-                } else if (code === 'ABU0') {
-                    type = 'Uscita Anticipata';
-                    color = '#ff5722';
-                } else {
-                    type = 'Altro';
-                    color = '#999';
-                }
-
-                html += `
-                    <div class="absence-card">
-                        <div style="margin-right: 12px; font-size: 24px;">${code === 'ABA0' ? '📅' : code === 'ABR0' ? '⏰' : '🚪'}</div>
-                        <div class="absence-info">
-                            <div class="absence-type">${type}</div>
-                            <div class="absence-date">${date}</div>
-                        </div>
-                        <div class="absence-badge" style="background: ${justified ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 152, 0, 0.2)'}; color: ${justified ? '#4caf50' : '#ff9800'}">
-                            ${justified ? 'Giustificata' : 'Da giustificare'}
-                        </div>
-                    </div>
-                `;
-            });
-
-            return html;
-        }
-
-        function determineQuarter(dateStr) {
-            try {
-                const d = new Date(dateStr);
-                if (d.getMonth() >= 8 || (d.getMonth() === 0 && d.getDate() <= 28)) return 1;
-                if ((d.getMonth() === 0 && d.getDate() > 28) || (d.getMonth() >= 1 && d.getMonth() <= 5)) return 2;
-            } catch {}
-            return 0;
-        }
-
-        function parseGrade(value) {
-            try {
-                return parseFloat(value.replace(',', '.').replace('+', '').replace('-', '').replace('½', '.5'));
-            } catch {
-                return null;
-            }
-        }
-
-        function calculateGradeStats() {
-            const q1Grades = [], q2Grades = [], allGrades = [];
-            const subjects = {};
-
-            currentData.grades.forEach(g => {
-                if (g.color === 'blue') return;
-
-                const value = g.displayValue || g.decimalValue?.toString() || '';
-                const val = parseGrade(value);
-                if (val === null) return;
-
-                const date = g.evtDate || '';
-                const quarter = determineQuarter(date);
-                const subject = g.subjectDesc || 'N/A';
-
-                allGrades.push(val);
-                if (quarter === 1) q1Grades.push(val);
-                if (quarter === 2) q2Grades.push(val);
-
-                if (!subjects[subject]) {
-                    subjects[subject] = {
-                        name: subject,
-                        grades: [],
-                        q1: [],
-                        q2: [],
-                        quarterCounts: { 1: 0, 2: 0 },
-                        quarterAvgs: { 1: 0, 2: 0 }
-                    };
-                }
-
-                subjects[subject].grades.push(val);
-                if (quarter === 1) {
-                    subjects[subject].q1.push(val);
-                    subjects[subject].quarterCounts[1]++;
-                }
-                if (quarter === 2) {
-                    subjects[subject].q2.push(val);
-                    subjects[subject].quarterCounts[2]++;
-                }
-            });
-
-            const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
-
-            Object.values(subjects).forEach(s => {
-                s.avg = avg(s.grades);
-                s.quarterAvgs[1] = avg(s.q1);
-                s.quarterAvgs[2] = avg(s.q2);
-            });
-
-            const now = new Date();
-            const currentQuarter = (now.getMonth() >= 8 || (now.getMonth() === 0 && now.getDate() <= 28)) ? 1 : 2;
-
-            const subjectsList = Object.values(subjects).sort((a, b) => {
-                const avgA = a.quarterAvgs[currentQuarter] || 0;
-                const avgB = b.quarterAvgs[currentQuarter] || 0;
-                return avgB - avgA;
-            });
-
-            return {
-                totale: avg(allGrades),
-                q1: avg(q1Grades),
-                q2: avg(q2Grades),
-                subjects: subjectsList
-            };
-        }
-
-        function countAbsences() {
-            let totali = 0, ritardi = 0, uscite = 0;
-            currentData.absences.forEach(a => {
-                const code = a.evtCode || '';
-                if (code === 'ABA0') totali++;
-                else if (code === 'ABR0') ritardi++;
-                else if (code === 'ABU0') uscite++;
-            });
-            return { totali, ritardi, uscite };
-        }
-
-        function calculateAbsenceProgress(absences) {
-            const now = new Date();
-            const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
-            const startDate = new Date(year, 8, 15);
-            const endDate = new Date(year + 1, 5, 10);
-
-            const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const daysPassed = Math.max(0, Math.min(totalDays, Math.floor((now - startDate) / (1000 * 60 * 60 * 24))));
-
-            const yearPercent = Math.max(0, Math.min(100, (daysPassed / totalDays * 100)));
-
-            const maxSchoolDays = 200;
-            const maxAbsences = maxSchoolDays * 0.25;
-            const absencePercent = Math.max(0, Math.min(100, (absences / maxAbsences * 100)));
-
-            return {
-                yearPercent,
-                absencePercent,
-                absences,
-                maxAbsences: Math.floor(maxAbsences)
-            };
-        }
-
-        function showSubjectDetail(subjectName) {
-            const subjectGrades = currentData.grades.filter(g => g.subjectDesc === subjectName && g.color !== 'blue');
-            
-            const q1 = [], q2 = [];
-            subjectGrades.forEach(g => {
-                const val = parseGrade(g.displayValue || g.decimalValue?.toString() || '');
-                if (val === null) return;
-                const q = determineQuarter(g.evtDate || '');
-                if (q === 1) q1.push(val);
-                if (q === 2) q2.push(val);
-            });
-
-            const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
-            const avgQ1 = avg(q1);
-            const avgQ2 = avg(q2);
-            const avgTotal = avg([...q1, ...q2]);
-
-            const sorted = [...subjectGrades].sort((a, b) => {
-                try {
-                    return new Date(b.evtDate) - new Date(a.evtDate);
-                } catch {
-                    return 0;
-                }
-            });
-
-            let html = `
-                <div class="app-header">
-                    <button class="logout-btn" onclick="hideSubjectDetail()" style="font-size: 20px;">←</button>
-                    <div class="header-title">${subjectName}</div>
-                    <div style="width: 40px;"></div>
-                </div>
-                <div class="content">
-                    <div class="card" style="background: rgba(33, 150, 243, 0.1);">
-                        <div class="card-title">MEDIE</div>
-                        <div class="stats-row">
-                            <div class="stat-card" style="background: ${avgTotal >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                                <div class="stat-label">Totale</div>
-                                <div class="stat-value" style="color: ${avgTotal >= 6 ? '#4caf50' : '#f44336'}">
-                                    ${avgTotal > 0 ? avgTotal.toFixed(2) : 'N/A'}
-                                </div>
-                            </div>
-                            <div class="stat-card" style="background: ${avgQ1 >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                                <div class="stat-label">Q1</div>
-                                <div class="stat-value" style="color: ${avgQ1 >= 6 ? '#4caf50' : '#f44336'}">
-                                    ${avgQ1 > 0 ? avgQ1.toFixed(2) : 'N/A'}
-                                </div>
-                            </div>
-                            <div class="stat-card" style="background: ${avgQ2 >= 6 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}">
-                                <div class="stat-label">Q2</div>
-                                <div class="stat-value" style="color: ${avgQ2 >= 6 ? '#4caf50' : '#f44336'}">
-                                    ${avgQ2 > 0 ? avgQ2.toFixed(2) : 'N/A'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="section-title">TUTTI I VOTI</div>
-            `;
-
-            sorted.forEach(g => {
-                const value = g.displayValue || g.decimalValue?.toString() || 'N/A';
-                const date = g.evtDate || 'N/A';
-                const type = g.componentDesc || 'N/A';
-                const note = g.notesForFamily || '';
-                const quarter = determineQuarter(date);
-                const val = parseGrade(value);
-                const color = val !== null ? (val >= 6 ? '#4caf50' : '#f44336') : '#999';
-
-                html += `
-                    <div class="absence-card" style="flex-direction: row; align-items: center;">
-                        <div style="min-width: 50px; height: 50px; background: ${color}33; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
-                            <div style="font-size: 20px; font-weight: bold; color: ${color}">${value}</div>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 500;">${type} - ${date}${quarter > 0 ? ' [Q' + quarter + ']' : ''}</div>
-                            ${note ? `<div style="font-size: 11px; color: #999; margin-top: 4px;">${note}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            html += '</div>';
-            document.getElementById('detailScreen').innerHTML = html;
-            showScreen('detailScreen');
-        }
-
-        function hideSubjectDetail() {
-            showScreen('mainScreen');
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            if (confirm('Vuoi davvero uscire?')) {
-                localStorage.removeItem('cv_username');
-                localStorage.removeItem('cv_password');
-                currentUser = null;
-                currentData = { grades: [], absences: [] };
-                showScreen('loginScreen');
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                document.getElementById('loginError').textContent = '';
-            }
-        });
-
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const tab = item.dataset.tab;
-                currentTab = tab;
-                
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                
-                renderContent();
-            });
-        });
-
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-        }
-    </script>
+        const val = parseGrade(g.displayValue || g.decimalValue?.toString() || '');
+        if (!val) return;
+
+        const q = determineQuarter(g.evtDate || '');
+        const subj = g.subjectDesc || 'N/A';
+
+        allGrades.push(val);
+        if (q === 1) q1Grades.push(val);
+        if (q === 2) q2Grades.push(val);
+
+        if (!bySubject[subj]) bySubject[subj] = [];
+        bySubject[subj].push(val);
+
+        if (!bySubjectByQ[subj]) bySubjectByQ[subj] = { 1: [], 2: [] };
+        if (q === 1) bySubjectByQ[subj][1].push(val);
+        if (q === 2) bySubjectByQ[subj][2].push(val);
+      });
+
+      const avg = arr => arr.length ? arr.reduce((a,b) => a+b) / arr.length : 0;
+
+      // General stats
+      const genHtml = `
+        <div class="stat-card" style="background: rgba(33,150,243,0.2);">
+          <div class="stat-label">Media Totale</div>
+          <div class="stat-value" style="color: ${avg(allGrades) >= 6 ? '#4caf50' : '#f44336'}">
+            ${avg(allGrades).toFixed(2)}
+          </div>
+        </div>
+        <div class="stat-card" style="background: rgba(76,175,80,0.2);">
+          <div class="stat-label">Q1</div>
+          <div class="stat-value" style="color: ${avg(q1Grades) >= 6 ? '#4caf50' : '#f44336'}">
+            ${avg(q1Grades).toFixed(2)}
+          </div>
+        </div>
+        <div class="stat-card" style="background: rgba(156,39,176,0.2);">
+          <div class="stat-label">Q2</div>
+          <div class="stat-value" style="color: ${avg(q2Grades) >= 6 ? '#4caf50' : '#f44336'}">
+            ${avg(q2Grades).toFixed(2)}
+          </div>
+        </div>
+      `;
+      document.getElementById('generalStats').innerHTML = genHtml;
+
+      // Subject stats sorted by current quarter
+      const sortedSubjects = Object.entries(bySubject).sort((a, b) => {
+        const avgA = avg(bySubjectByQ[a[0]][currentQ]);
+        const avgB = avg(bySubjectByQ[b[0]][currentQ]);
+        return avgB - avgA;
+      });
+
+      const subjHtml = sortedSubjects.map(([subj, grades]) => {
+        const qAvg = avg(bySubjectByQ[subj][currentQ]);
+        const qCount = bySubjectByQ[subj][currentQ].length;
+        const color = qAvg >= 6 ? '#4caf50' : '#f44336';
+        
+        return `
+          <div class="subject-bar">
+            <div class="subject-header">
+              <span style="font-weight: 500;">${subj}</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                ${qCount < 3 ? `<span class="warning">⚠️ solo ${qCount} voti</span>` : ''}
+                <span style="font-weight: bold; color: ${color}; font-size: 16px;">
+                  ${qAvg > 0 ? qAvg.toFixed(2) : 'N/A'}
+                </span>
+              </div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${qAvg * 10}%; background: ${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('subjectStats').innerHTML = subjHtml;
+
+      // All grades list
+      const sorted = [...gradesData].sort((a, b) => {
+        const dA = new Date(a.evtDate || 0);
+        const dB = new Date(b.evtDate || 0);
+        return dB - dA;
+      });
+
+      const listHtml = sorted.map(g => {
+        const val = g.displayValue || g.decimalValue?.toString() || 'N/A';
+        const isBlue = g.color === 'blue';
+        const numVal = parseGrade(val);
+        const color = isBlue ? '#2196f3' : (numVal >= 6 ? '#4caf50' : '#f44336');
+        const q = determineQuarter(g.evtDate || '');
+        
+        return `
+          <div class="grade-item">
+            <div class="grade-value" style="color: ${color};">
+              ${val}<br>
+              <span style="font-size: 10px; color: #999;">
+                ${g.evtDate || 'N/A'}${q ? ' [Q'+q+']' : ''}
+              </span>
+            </div>
+            <div class="grade-info">
+              <div style="font-weight: bold; font-size: 16px;">${g.subjectDesc || 'N/A'}</div>
+              <div style="font-size: 13px; color: #aaa;">${g.componentDesc || 'N/A'}</div>
+              ${g.notesForFamily ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${g.notesForFamily}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('gradesList').innerHTML = listHtml;
+    }
+
+    function renderAbsences() {
+      let totali = 0, ritardi = 0, uscite = 0;
+      absencesData.forEach(a => {
+        if (a.evtCode === 'ABA0') totali++;
+        else if (a.evtCode === 'ABR0') ritardi++;
+        else if (a.evtCode === 'ABU0') uscite++;
+      });
+
+      // Progress
+      const now = new Date();
+      const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+      const startDate = new Date(year, 8, 15);
+      const endDate = new Date(year + 1, 5, 10);
+      const totalDays = Math.floor((endDate - startDate) / 86400000);
+      const elapsed = Math.floor((now - startDate) / 86400000);
+      const yearPct = Math.min(100, (elapsed / totalDays * 100));
+      
+      const maxAbs = 50;
+      const absPct = Math.min(100, (totali / maxAbs * 100));
+      const absColor = absPct > 80 ? '#f44336' : (absPct > 50 ? '#ff9800' : '#4caf50');
+
+      document.getElementById('absenceProgress').innerHTML = `
+        <div style="margin-bottom: 24px;">
+          <div style="color: #999; margin-bottom: 8px;">Anno trascorso: ${yearPct.toFixed(1)}%</div>
+          <div class="progress-bar" style="height: 24px;">
+            <div class="progress-fill" style="width: ${yearPct}%; background: #2196f3;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="color: #999; margin-bottom: 8px;">Assenze: ${totali} / ${maxAbs} (${absPct.toFixed(1)}%)</div>
+          <div class="progress-bar" style="height: 24px;">
+            <div class="progress-fill" style="width: ${absPct}%; background: ${absColor};"></div>
+          </div>
+          ${absPct > yearPct ? `
+            <div style="background: rgba(244,67,54,0.2); color: #f44336; padding: 12px; border-radius: 8px; margin-top: 12px;">
+              ⚠️ Attenzione: stai facendo più assenze del dovuto!
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      document.getElementById('absenceStats').innerHTML = `
+        <div class="stat-card" style="background: rgba(244,67,54,0.2);">
+          <div class="stat-label">Assenze</div>
+          <div class="stat-value" style="color: #f44336;">${totali}</div>
+        </div>
+        <div class="stat-card" style="background: rgba(255,152,0,0.2);">
+          <div class="stat-label">Ritardi</div>
+          <div class="stat-value" style="color: #ff9800;">${ritardi}</div>
+        </div>
+        <div class="stat-card" style="background: rgba(255,87,34,0.2);">
+          <div class="stat-label">Uscite</div>
+          <div class="stat-value" style="color: #ff5722;">${uscite}</div>
+        </div>
+      `;
+
+      const listHtml = absencesData.slice(0, 20).map(a => {
+        const types = {
+          'ABA0': { label: 'Assenza', color: '#f44336' },
+          'ABR0': { label: 'Ritardo', color: '#ff9800' },
+          'ABU0': { label: 'Uscita', color: '#ff5722' }
+        };
+        const type = types[a.evtCode] || { label: 'Altro', color: '#999' };
+        const isJust = a.isJustified;
+
+        return `
+          <div class="grade-item">
+            <div style="width: 50px; text-align: center; color: ${type.color}; font-size: 32px;">
+              🚫
+            </div>
+            <div class="grade-info">
+              <div style="font-weight: bold;">${type.label}</div>
+              <div style="font-size: 13px; color: #aaa;">${a.evtDate || 'N/A'}</div>
+            </div>
+            <div style="background: ${isJust ? 'rgba(76,175,80,0.2)' : 'rgba(255,152,0,0.2)'}; 
+                        color: ${isJust ? '#4caf50' : '#ff9800'}; 
+                        padding: 6px 12px; border-radius: 12px; font-size: 12px;">
+              ${isJust ? 'Giustificata' : 'Da giustificare'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('absenceList').innerHTML = listHtml;
+    }
+  </script>
 </body>
 </html>
